@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FocusDataBridge", "FocusDataBridge\FocusDataBridge.csproj", "{1094A72B-8981-41E7-9E49-CE018BE7F6FB}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Windows Service Setup", "Windows Service Setup\Windows Service Setup.vdproj", "{BB337908-425C-411B-8E33-C86BAF3A2010}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1094A72B-8981-41E7-9E49-CE018BE7F6FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1094A72B-8981-41E7-9E49-CE018BE7F6FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1094A72B-8981-41E7-9E49-CE018BE7F6FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1094A72B-8981-41E7-9E49-CE018BE7F6FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB337908-425C-411B-8E33-C86BAF3A2010}.Debug|Any CPU.ActiveCfg = Debug
+		{BB337908-425C-411B-8E33-C86BAF3A2010}.Release|Any CPU.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
