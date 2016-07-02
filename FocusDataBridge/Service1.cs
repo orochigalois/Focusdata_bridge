@@ -29,7 +29,7 @@ namespace FocusDataBridge
 
         protected override void OnStop()
         {
-            System.IO.File.Create(AppDomain.CurrentDomain.BaseDirectory + "OnStop.txt");
+            System.IO.File.Create(AppDomain.CurrentDomain.BaseDirectory + "OnStopAlex.txt");
         }
     }
 }
