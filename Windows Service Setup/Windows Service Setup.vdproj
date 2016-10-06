@@ -15,7 +15,25 @@
     {
         "Entry"
         {
+        "MsmKey" = "8:_01DD8D4BF3925051A6EE9E690447B84B"
+        "OwnerKey" = "8:_997F99393FC54D48AAB59681A0D275AD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_552030EFABE342D9A138DA6C8939938A"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_997F99393FC54D48AAB59681A0D275AD"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -27,6 +45,24 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_E233B233BDA255E070CA7333A419718F"
+        "OwnerKey" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_997F99393FC54D48AAB59681A0D275AD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_E233B233BDA255E070CA7333A419718F"
         "MsmSig" = "8:_UNDEFINED"
@@ -34,7 +70,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_997F99393FC54D48AAB59681A0D275AD"
+        "OwnerKey" = "8:_01DD8D4BF3925051A6EE9E690447B84B"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -55,6 +91,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
@@ -71,6 +115,22 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.5"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.5 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.5"
+                    }
+                }
+            }
         }
     }
     "Deployable"
@@ -105,6 +165,34 @@
             "InstallerClass" = "11:TRUE"
             "CustomActionData" = "8:"
             }
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_797F639AABF4431AA4277C1499DDA58F"
+            {
+            "Name" = "8:Primary output from SystemTray (Active)"
+            "Condition" = "8:"
+            "Object" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+            "FileType" = "3:2"
+            "InstallAction" = "3:1"
+            "Arguments" = "8:"
+            "EntryPoint" = "8:"
+            "Sequence" = "3:2"
+            "Identifier" = "8:_8E698550_1674_43B1_8204_2D50EB9DC7B6"
+            "InstallerClass" = "11:TRUE"
+            "CustomActionData" = "8:"
+            }
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_7DE0EF4F5463446B8CECD99D30BBE706"
+            {
+            "Name" = "8:Primary output from SystemTray (Active)"
+            "Condition" = "8:"
+            "Object" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+            "FileType" = "3:2"
+            "InstallAction" = "3:4"
+            "Arguments" = "8:"
+            "EntryPoint" = "8:"
+            "Sequence" = "3:2"
+            "Identifier" = "8:_D67E7762_BD5A_49C9_BBB1_A2B89AA30C85"
+            "InstallerClass" = "11:TRUE"
+            "CustomActionData" = "8:"
+            }
         }
         "DefaultFeature"
         {
@@ -128,6 +216,57 @@
         }
         "File"
         {
+            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_01DD8D4BF3925051A6EE9E690447B84B"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:MySql.Data, Version=6.9.9.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL"
+                "ScatterAssemblies"
+                {
+                    "_01DD8D4BF3925051A6EE9E690447B84B"
+                    {
+                    "Name" = "8:MySql.Data.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:MySql.Data.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_0DD3F06048154342945B514074A58402"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_552030EFABE342D9A138DA6C8939938A"
+            {
+            "SourcePath" = "8:..\\SystemTray\\focusdata.ico"
+            "TargetName" = "8:focusdata.ico"
+            "Tag" = "8:"
+            "Folder" = "8:_0DD3F06048154342945B514074A58402"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_E233B233BDA255E070CA7333A419718F"
             {
             "AssemblyRegister" = "3:1"
@@ -216,7 +355,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:FocusData Bridge"
         "ProductCode" = "8:{BB3492F0-75E2-41C0-B829-391C07D1CF2C}"
-        "PackageCode" = "8:{C7D5FA6B-0DBB-41D4-A309-5A982FBA90FE}"
+        "PackageCode" = "8:{F796ABC0-A537-4896-B5E1-74ED1B96E557}"
         "UpgradeCode" = "8:{9B0F2657-0932-4212-929D-2E0E0C396795}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -336,6 +475,20 @@
         }
         "Shortcut"
         {
+            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_72425D7F3B424BD98FE7C5044876ED98"
+            {
+            "Name" = "8:Shortcut to Primary output from SystemTray (Active)"
+            "Arguments" = "8:"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:0"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+            "Folder" = "8:_E163B0C12FDE4D7EBF9D0D7B24595BA4"
+            "WorkingFolder" = "8:_0DD3F06048154342945B514074A58402"
+            "Icon" = "8:"
+            "Feature" = "8:"
+            }
         }
         "UserInterface"
         {
@@ -758,6 +911,34 @@
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:Built"
             "OutputProjectGuid" = "8:{1094A72B-8981-41E7-9E49-CE018BE7F6FB}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+            {
+            "SourcePath" = "8:..\\SystemTray\\obj\\Release\\SystemTray.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_0DD3F06048154342945B514074A58402"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{AEF37A7A-D978-4A1B-8F03-3B972DC6FB5B}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {
