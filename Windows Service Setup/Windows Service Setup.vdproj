@@ -3,7 +3,7 @@
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
 "IsWebType" = "8:FALSE"
-"ProjectName" = "8:Windows Service Setup"
+"ProjectName" = "8:Focusdata Service Setup"
 "LanguageId" = "3:1033"
 "CodePage" = "3:1252"
 "UILanguageId" = "3:1033"
@@ -98,6 +98,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.5"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.5 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.5"
+                    }
+                }
             }
         }
         "Release"
@@ -151,6 +159,20 @@
             "InstallerClass" = "11:TRUE"
             "CustomActionData" = "8:"
             }
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_5392BCEC8FB34377A54E755F322D2275"
+            {
+            "Name" = "8:Primary output from SystemTray (Active)"
+            "Condition" = "8:"
+            "Object" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+            "FileType" = "3:2"
+            "InstallAction" = "3:2"
+            "Arguments" = "8:"
+            "EntryPoint" = "8:"
+            "Sequence" = "3:1"
+            "Identifier" = "8:_A98383AD_52F7_4748_BEE4_DDE587990AAA"
+            "InstallerClass" = "11:TRUE"
+            "CustomActionData" = "8:"
+            }
             "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_765051AAEF914300AE0A9AC5C99044F6"
             {
             "Name" = "8:Primary output from FocusDataBridge (Active)"
@@ -179,7 +201,7 @@
             "InstallerClass" = "11:TRUE"
             "CustomActionData" = "8:"
             }
-            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_7DE0EF4F5463446B8CECD99D30BBE706"
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_FE291E9B02D2486287323D3F7FA46998"
             {
             "Name" = "8:Primary output from SystemTray (Active)"
             "Condition" = "8:"
@@ -189,7 +211,7 @@
             "Arguments" = "8:"
             "EntryPoint" = "8:"
             "Sequence" = "3:2"
-            "Identifier" = "8:_D67E7762_BD5A_49C9_BBB1_A2B89AA30C85"
+            "Identifier" = "8:_84627A8B_B7B2_4D17_AA83_6D30A2D09873"
             "InstallerClass" = "11:TRUE"
             "CustomActionData" = "8:"
             }
@@ -316,6 +338,17 @@
                 {
                 }
             }
+            "{1525181F-901A-416C-8A58-119130FE478E}:_8614D3D06F464F9587947B67C62C5597"
+            {
+            "Name" = "8:#1928"
+            "AlwaysCreate" = "11:FALSE"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Property" = "8:StartupFolder"
+                "Folders"
+                {
+                }
+            }
             "{1525181F-901A-416C-8A58-119130FE478E}:_943F7A2739454C40A32D401121F1F4B8"
             {
             "Name" = "8:#1916"
@@ -355,18 +388,18 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:FocusData Bridge"
         "ProductCode" = "8:{BB3492F0-75E2-41C0-B829-391C07D1CF2C}"
-        "PackageCode" = "8:{F796ABC0-A537-4896-B5E1-74ED1B96E557}"
+        "PackageCode" = "8:{559BA860-7344-4BFB-A25F-4AABFC7CAD80}"
         "UpgradeCode" = "8:{9B0F2657-0932-4212-929D-2E0E0C396795}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
-        "InstallAllUsers" = "11:FALSE"
+        "InstallAllUsers" = "11:TRUE"
         "ProductVersion" = "8:1.0.0"
         "Manufacturer" = "8:FocusData"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:Windows Service Setup"
+        "Title" = "8:FocusData Service"
         "Subject" = "8:"
         "ARPCONTACT" = "8:Microsoft"
         "Keywords" = "8:"
@@ -475,18 +508,18 @@
         }
         "Shortcut"
         {
-            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_72425D7F3B424BD98FE7C5044876ED98"
+            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_7BB377D1D43741528DF16C4E7CEC75AE"
             {
-            "Name" = "8:Shortcut to Primary output from SystemTray (Active)"
+            "Name" = "8:Focusdata"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
             "IconIndex" = "3:0"
             "Transitive" = "11:FALSE"
             "Target" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
-            "Folder" = "8:_E163B0C12FDE4D7EBF9D0D7B24595BA4"
+            "Folder" = "8:_8614D3D06F464F9587947B67C62C5597"
             "WorkingFolder" = "8:_0DD3F06048154342945B514074A58402"
-            "Icon" = "8:"
+            "Icon" = "8:_552030EFABE342D9A138DA6C8939938A"
             "Feature" = "8:"
             }
         }

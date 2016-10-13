@@ -4,9 +4,11 @@ using System.Resources;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.ServiceProcess;
+//using Microsoft.Win32;
 
 public class FocusdataSystemTray : System.Windows.Forms.Form
 {
+    //RegistryKey rkApp = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
     private System.ServiceProcess.ServiceController WSController;
     private System.Windows.Forms.NotifyIcon WSNotifyIcon;
     private System.ComponentModel.IContainer components;
@@ -16,6 +18,7 @@ public class FocusdataSystemTray : System.Windows.Forms.Form
     MenuItem[] mnuItems = new MenuItem[7];
     public FocusdataSystemTray()
     {
+        //rkApp.SetValue("focusdatabridge", Application.ExecutablePath.ToString());
         //constructor for the form
         InitializeComponent();
 
@@ -110,20 +113,26 @@ public class FocusdataSystemTray : System.Windows.Forms.Form
 
     private void InitializeServiceController()
     {
-        this.WSController = new System.ServiceProcess.ServiceController();
+        
+            this.WSController = new System.ServiceProcess.ServiceController();
 
-        ServiceController[] AvailableServices = ServiceController.GetServices(".");
+            ServiceController[] AvailableServices = ServiceController.GetServices(".");
 
-        foreach (ServiceController AvailableService in AvailableServices)
-        {
-            //Check the service name for IIS.
-            if (AvailableService.ServiceName == "Alex service")
+            foreach (ServiceController AvailableService in AvailableServices)
             {
-                this.WSController.ServiceName = "Alex service";
-                SetButtonStatus();
-                return;
+                //Check the service name for IIS.
+                if (AvailableService.ServiceName == "Focusdata Service")
+                {
+                    this.WSController.ServiceName = "Focusdata Service";
+                    WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
+                    SetButtonStatus();
+               
+                    
+                    return;
+                }
             }
-        }
+      
+        
     }
 
 
@@ -132,7 +141,7 @@ public class FocusdataSystemTray : System.Windows.Forms.Form
         //setup the Icon
         NotifyIcon WSNotifyIcon = new NotifyIcon();
         WSNotifyIcon.Icon = mDirIcon;
-        WSNotifyIcon.Text = "Right Click to Configure";
+        WSNotifyIcon.Text = "Focusdata Bridge";
         WSNotifyIcon.Visible = true;
 
         //Create the MenuItem objects and add them to
@@ -144,8 +153,11 @@ public class FocusdataSystemTray : System.Windows.Forms.Form
         mnuItems[0].DefaultItem = true;
         mnuItems[1] = new MenuItem("-");
         mnuItems[2] = new MenuItem("Start service", new EventHandler(this.Start_Click));
+        mnuItems[2].Enabled = false;
         mnuItems[3] = new MenuItem("Stop service", new EventHandler(this.Stop_Click));
+        mnuItems[3].Enabled = false;
         mnuItems[4] = new MenuItem("Pause service", new EventHandler(this.Pause_Click));
+        mnuItems[4].Enabled = false;
         mnuItems[5] = new MenuItem("-");
         mnuItems[6] = new MenuItem("Exit", new EventHandler(this.ExitControlForm));
 
@@ -162,7 +174,7 @@ public class FocusdataSystemTray : System.Windows.Forms.Form
 
         //check the status of the service and enable the 
         //command buttons accordingly.
-
+        //MessageBox.Show(strServerStatus);
 
         if (strServerStatus == "Running")
         {

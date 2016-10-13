@@ -13,9 +13,9 @@ using MySql.Data.MySqlClient;
 
 namespace FocusDataBridge
 {
-    public partial class Service1 : ServiceBase
+    public partial class ServiceBridge : ServiceBase
     {
-        public Service1()
+        public ServiceBridge()
         {
             InitializeComponent();
         }

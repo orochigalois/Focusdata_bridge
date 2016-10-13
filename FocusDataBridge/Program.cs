@@ -16,14 +16,14 @@ namespace FocusDataBridge
         {
 
 #if DEBUG
-            Service1 myService = new Service1();
+            ServiceBridge myService = new ServiceBridge();
             myService.OnDebug();
             System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
 #else
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[]
             {
-                new Service1()
+                new ServiceBridge()
             };
             ServiceBase.Run(ServicesToRun);
 #endif
