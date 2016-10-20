@@ -5,10 +5,11 @@ using System.Diagnostics;
 using System.IO;
 //Add MySql Library
 using MySql.Data.MySqlClient;
+using System.Configuration;
 
 namespace FocusDataBridge
 {
-    class DBConnect
+    class MysqlConnect
     {
         private MySqlConnection connection;
         private string server;
@@ -17,7 +18,7 @@ namespace FocusDataBridge
         private string password;
 
         //Constructor
-        public DBConnect()
+        public MysqlConnect()
         {
             Initialize();
         }
@@ -25,12 +26,14 @@ namespace FocusDataBridge
         //Initialize values
         private void Initialize()
         {
-            server = "localhost";
-            database = "focusdata";
-            uid = "root";
-            password = "678f424f8a";
+
+            string FOCUSDATA_DATABASE_HOST = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_HOST"];
+            string FOCUSDATA_DATABASE_NAME = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_NAME"];
+            string FOCUSDATA_DATABASE_USER = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_USER"];
+            string FOCUSDATA_DATABASE_PASS = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_PASS"];
+
             string connectionString;
-            connectionString = "SERVER=" + server + ";" + "DATABASE=" + database + ";" + "UID=" + uid + ";" + "PASSWORD=" + password + ";";
+            connectionString = "SERVER=" + FOCUSDATA_DATABASE_HOST + ";" + "DATABASE=" + FOCUSDATA_DATABASE_NAME + ";" + "UID=" + FOCUSDATA_DATABASE_USER + ";" + "PASSWORD=" + FOCUSDATA_DATABASE_PASS + ";";
 
             connection = new MySqlConnection(connectionString);
         }
@@ -42,6 +45,7 @@ namespace FocusDataBridge
             try
             {
                 connection.Open();
+                LogWriter.LogWrite("Connect to Focusdata successfully");
                 return true;
             }
             catch (MySqlException ex)
@@ -54,10 +58,12 @@ namespace FocusDataBridge
                 {
                     case 0:
                         Console.WriteLine("Cannot connect to server.  Contact administrator");
+                        LogWriter.LogWrite("Cannot connect to focusdata server.  Contact administrator");
                         break;
 
                     case 1045:
                         Console.WriteLine("Invalid username/password, please try again");
+                        LogWriter.LogWrite("Invalid focusdata server username/password, please try again");
                         break;
                 }
                 return false;
@@ -80,7 +86,7 @@ namespace FocusDataBridge
         }
 
         //Insert statement
-        public void Insert(String name)
+        public void InsertDoctor(String name)
         {
             string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS) VALUES('"+name +"', '1')";
 

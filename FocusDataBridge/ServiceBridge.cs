@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using System.Threading;
+using System.Configuration;
+
 
 namespace FocusDataBridge
 {
@@ -42,7 +44,7 @@ namespace FocusDataBridge
         private void Poll()
         {
             CancellationToken cancellation = cts.Token;
-           // TimeSpan interval = TimeSpan.Zero;
+
             TimeSpan interval = TimeSpan.FromSeconds(5);
 
 
@@ -50,18 +52,22 @@ namespace FocusDataBridge
             {
                 try
                 {
-                    // Put your code to poll here.
-                    // Occasionally check the cancellation state.
 
                     string last = "", first = "";
-                    DBConnect dbConnect;
+                    MysqlConnect mysqlConnect;
                     SqlDataReader rdr = null;
-                    //System.IO.File.Create(AppDomain.CurrentDomain.BaseDirectory + "OnStart.txt");
-                    SqlConnection con = new SqlConnection("Data Source=DBServer;Password=Miaoyaliu1213;Persist Security Info=True;User ID=sa;Initial Catalog=BPSPatients;Data Source=CND98GRZ52\\SQLEXPRESS");
+        
+
+                    string DATABASE_HOST = ConfigurationManager.AppSettings["DATABASE_HOST"];
+                    string DATABASE_NAME = ConfigurationManager.AppSettings["DATABASE_NAME"];
+                    string DATABASE_USER = ConfigurationManager.AppSettings["DATABASE_USER"];
+                    string DATABASE_PASS = ConfigurationManager.AppSettings["DATABASE_PASS"];
+
+                    SqlConnection con = new SqlConnection("Data Source=DBServer;Password="+ DATABASE_PASS + ";Persist Security Info=True;User ID="+ DATABASE_USER + ";Initial Catalog="+ DATABASE_NAME + ";Data Source="+ DATABASE_HOST);
                     try
                     {
                         con.Open();
-
+                        LogWriter.LogWrite("Connect to local database successfully");
 
                         SqlCommand cmd = new SqlCommand(
                         "BP_GetAllUsers", con);
@@ -72,35 +78,26 @@ namespace FocusDataBridge
                             rdr = cmd.ExecuteReader();
                             while (rdr.Read())
                             {
-                                // get the results of each column
+                    
                                 last = (string)rdr["SURNAME"];
                                 first = (string)rdr["FIRSTNAME"];
-                                string email = (string)rdr["EMAIL"];
-
-                                // print out the results
-
-
-                                //using (StreamWriter writer = new StreamWriter("c:\\OnStart.txt", true))
-                                //{
-                                //    writer.WriteLine(first + ";" + last + ";" + email + "\n");
-                                //    writer.Close();
-                                //}
-
                             }
                         }
                         catch (Exception e)
                         {
                             Console.WriteLine(e.Message);
+                            LogWriter.LogWrite("Read local table failed.\n" + e.Message);
                         }
                     }
                     catch (Exception e)
                     {
                         Console.WriteLine(e.Message);
+                        LogWriter.LogWrite("Local database connecting failed.\n"+ e.Message);
                     }
 
 
-                    dbConnect = new DBConnect();
-                    dbConnect.Insert(first + last);
+                    mysqlConnect = new MysqlConnect();
+                    mysqlConnect.InsertDoctor(first + last);
 
 
 
@@ -130,5 +127,7 @@ namespace FocusDataBridge
             cts.Cancel();
             mainTask.Wait();
         }
+
+
     }
 }
