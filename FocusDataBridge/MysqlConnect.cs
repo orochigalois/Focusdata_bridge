@@ -362,7 +362,137 @@ namespace FocusDataBridge
 
 
 
+        /***            ForClinic BEGIN         ***/
+        public DataTable GetAppointmentRequests()
+        {
+            string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_NAME,CUSTOMER_GENDER,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_customer_user c on a.REQUESTING_USER_ID=c.CUSTOMER_USER_ID WHERE REQUESTING_FLAG=1";
 
+            DataTable re = new DataTable();
+            re.Clear();
+            re.Columns.Add("DOCTOR_APPOINTMENT_TIME_ID");
+            re.Columns.Add("DOCTOR_ID_IMPORT");
+            re.Columns.Add("APPOINTMENT_DATE");
+            re.Columns.Add("APPOINTMENT_TIME");
+            re.Columns.Add("CUSTOMER_USER_MAIL");
+            re.Columns.Add("CUSTOMER_NAME");
+            re.Columns.Add("CUSTOMER_GENDER");
+            re.Columns.Add("CUSTOMER_BIRTHDAY");
+            re.Columns.Add("CUSTOMER_ADDR");
+            re.Columns.Add("CUSTOMER_POSTCODE");
+            re.Columns.Add("CUSTOMER_SUBURB");
+            re.Columns.Add("STATE_ID");
+            re.Columns.Add("CUSTOMER_PHONE_NO");
+            re.Columns.Add("MEDICAL_CARD_NO");
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                //Read the data and store them in the list
+                while (dataReader.Read())
+                {
+                    DataRow _r = re.NewRow();
+                    _r["DOCTOR_APPOINTMENT_TIME_ID"] = dataReader["DOCTOR_APPOINTMENT_TIME_ID"].ToString();
+                    _r["DOCTOR_ID_IMPORT"] = dataReader["DOCTOR_ID_IMPORT"].ToString();
+                    _r["APPOINTMENT_DATE"] = dataReader["APPOINTMENT_DATE"].ToString();
+                    _r["APPOINTMENT_TIME"] = dataReader["APPOINTMENT_TIME"].ToString();
+                    _r["CUSTOMER_USER_MAIL"] = dataReader["CUSTOMER_USER_MAIL"].ToString();
+                    _r["CUSTOMER_NAME"] = dataReader["CUSTOMER_NAME"].ToString();
+                    _r["CUSTOMER_GENDER"] = dataReader["CUSTOMER_GENDER"].ToString();
+                    _r["CUSTOMER_BIRTHDAY"] = dataReader["CUSTOMER_BIRTHDAY"].ToString();
+                    _r["CUSTOMER_ADDR"] = dataReader["CUSTOMER_ADDR"].ToString();
+                    _r["CUSTOMER_POSTCODE"] = dataReader["CUSTOMER_POSTCODE"].ToString();
+                    _r["CUSTOMER_SUBURB"] = dataReader["CUSTOMER_SUBURB"].ToString();
+                    _r["STATE_ID"] = dataReader["STATE_ID"].ToString();
+                    _r["CUSTOMER_PHONE_NO"] = dataReader["CUSTOMER_PHONE_NO"].ToString();
+                    _r["MEDICAL_CARD_NO"] = dataReader["MEDICAL_CARD_NO"].ToString();
+                    re.Rows.Add(_r);
+                }
+
+                //close Data Reader
+                dataReader.Close();
+
+                //close Connection
+                this.CloseConnection();
+
+                //return list to be displayed
+                return re;
+            }
+            else
+            {
+                return re;
+            }
+        }
+
+        public void ResetAllRequestFlag()
+        {
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+
+                string query = "UPDATE fd_rel_doctor_appointment_time SET REQUESTING_FLAG=0,REQUESTING_USER_ID=0";
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+        public void SetSuccessfulTo2(string id)//2 means ocupied
+        {
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=2 where DOCTOR_APPOINTMENT_TIME_ID="+id;
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+        public void SetSuccessfulTo1(string id)
+        {
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=1 where DOCTOR_APPOINTMENT_TIME_ID=" + id;
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+        /***            ForClinic END         ***/
 
 
         /***            DEMO BEGIN         ***/
