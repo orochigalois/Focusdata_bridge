@@ -6,6 +6,7 @@ using System.IO;
 //Add MySql Library
 using MySql.Data.MySqlClient;
 using System.Configuration;
+using System.Data;
 
 namespace FocusDataBridge
 {
@@ -85,10 +86,96 @@ namespace FocusDataBridge
             }
         }
 
-        //Insert statement
-        public void InsertDoctor(String name)
+      
+        /***            fd_doctor BEGIN         ***/
+
+        public bool IDExistInTable(int userID)
         {
-            string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS) VALUES('"+name +"', '1')";
+            string query = "SELECT Count(*) FROM fd_doctor where DOCTOR_ID_IMPORT="+userID.ToString();
+            int Count = -1;
+
+            //Open Connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Mysql Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                //ExecuteScalar will return one value
+                Count = int.Parse(cmd.ExecuteScalar() + "");
+
+                //close Connection
+                this.CloseConnection();
+
+                return Count>0;
+            }
+            else
+            {
+                return Count > 0;
+            }
+        }
+        
+
+        public string GetDoctorName(int userID)
+        {
+            string query = "SELECT DOCTOR_NAME FROM fd_doctor where DOCTOR_ID_IMPORT="+ userID.ToString();
+
+            string result="";
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                //Read the data and store them in the list
+                while (dataReader.Read())
+                {
+                    result = dataReader["DOCTOR_NAME"].ToString();
+                }
+
+                //close Data Reader
+                dataReader.Close();
+
+                //close Connection
+                this.CloseConnection();
+
+                //return list to be displayed
+                return result;
+            }
+            else
+            {
+                return result;
+            }
+        }
+
+        public void UpdateDoctor(string surName, string firstName, int userID)
+        {
+            string query = "UPDATE fd_doctor SET DOCTOR_NAME='"+ firstName +" "+ surName + "' WHERE DOCTOR_ID_IMPORT="+ userID.ToString();
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+
+        public void InsertDoctor(String surName,String firstName,int userID)
+        {
+            string name = firstName + " " + surName;
+            string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT) VALUES('"+name +"', '1','"+ userID.ToString() + "')";
 
             //open connection
             if (this.OpenConnection() == true)
@@ -104,6 +191,181 @@ namespace FocusDataBridge
             }
         }
 
+        /***            fd_doctor END         ***/
+
+
+        /***            fd_rel_doctor_appointment_time BEGIN         ***/
+        public string GetHuangYeDOCTOR_ID(string ClinicID)
+        {
+            string query = "SELECT DOCTOR_ID FROM fd_doctor where DOCTOR_ID_IMPORT=" + ClinicID;
+            string DOCTOR_ID = "";
+
+            
+
+            MySqlCommand cmd = new MySqlCommand(query, connection);
+
+            MySqlDataReader dataReader = cmd.ExecuteReader();
+
+            //Read the data and store them in the list
+            while (dataReader.Read())
+            {
+                DOCTOR_ID = dataReader["DOCTOR_ID"].ToString();
+            }
+
+            //close Data Reader
+            dataReader.Close();
+
+
+            return DOCTOR_ID;
+        }
+
+        public bool AppExistInTable(DataRow dr)
+        {
+            int Count = -1;
+            if (this.OpenConnection() == true)
+            {
+
+                if (GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString()).Equals(""))
+                    return false;
+
+                string query = "SELECT  Count(*) FROM fd_rel_doctor_appointment_time where DOCTOR_ID='" 
+                    + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                    + "' AND APPOINTMENT_DATE= '"
+                    + dr["APPOINTMENT_DATE"]
+                    + "' AND APPOINTMENT_TIME= '"
+                    + dr["APPOINTMENT_TIME"]
+                    +"'"
+                    ;
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                Count = int.Parse(cmd.ExecuteScalar() + "");
+
+                //close Connection
+                this.CloseConnection();
+
+                return Count > 0;
+
+
+            }
+
+            return false;
+
+        }
+
+        
+
+        public void InsertAppointment(DataRow dr)
+        {
+
+  
+            //open connection
+            if (this.OpenConnection() == true)
+            {
+
+                string query = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS) VALUES('"
+                + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                + "','"
+                + dr["APPOINTMENT_DATE"].ToString()
+                + "','"
+                + dr["APPOINTMENT_TIME"].ToString()
+                + "','"
+                + dr["ACTIVE_STATUS"].ToString()
+                + "')";
+
+                //create command and assign the query and connection from the constructor
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                //Execute command
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+        public string GetAppActive(DataRow dr)
+        {
+            
+
+            string result = "";
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+
+                string query = "SELECT ACTIVE_STATUS FROM fd_rel_doctor_appointment_time where DOCTOR_ID='"
+                + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                + "' AND APPOINTMENT_DATE= '"
+                    + dr["APPOINTMENT_DATE"]
+                    + "' AND APPOINTMENT_TIME= '"
+                    + dr["APPOINTMENT_TIME"]
+                    +"'";
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                //Read the data and store them in the list
+                while (dataReader.Read())
+                {
+                    result = dataReader["ACTIVE_STATUS"].ToString();
+                }
+
+                //close Data Reader
+                dataReader.Close();
+
+                //close Connection
+                this.CloseConnection();
+
+                //return list to be displayed
+                return result;
+            }
+            else
+            {
+                return result;
+            }
+        }
+
+
+        
+        public void UpdateAppointment(DataRow dr)
+        {
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+
+                string query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS="
+                + dr["ACTIVE_STATUS"]
+                + " WHERE DOCTOR_ID="
+                + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                + " AND APPOINTMENT_DATE= '"
+                    + dr["APPOINTMENT_DATE"]
+                    + "' AND APPOINTMENT_TIME= '"
+                    + dr["APPOINTMENT_TIME"]
+                    + "'";
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+        /***            fd_rel_doctor_appointment_time END         ***/
+
+
+
+
+
+
+
+        /***            DEMO BEGIN         ***/
         //Update statement
         public void Update()
         {
@@ -282,5 +544,6 @@ namespace FocusDataBridge
                 Console.WriteLine("Error , unable to Restore!");
             }
         }
+        /***            DEMO END         ***/
     }
 }

@@ -22,23 +22,23 @@ namespace SystemTray
             InitializeComponent();
             LogTextBox.Dock = DockStyle.Fill;
 
-            var watch = new FileSystemWatcher();
-            watch.Path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            watch.Filter = "log.txt";
-            watch.NotifyFilter = NotifyFilters.LastWrite; //more options
-            watch.Changed += new FileSystemEventHandler(OnChanged);
-            watch.EnableRaisingEvents = true;
+            //var watch = new FileSystemWatcher();
+            //watch.Path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            //watch.Filter = "log.txt";
+            //watch.NotifyFilter = NotifyFilters.LastWrite; //more options
+            //watch.Changed += new FileSystemEventHandler(OnChanged);
+            //watch.EnableRaisingEvents = true;
 
 
 
 
         }
-        private void OnChanged(object source, FileSystemEventArgs e)
-        {
+        //private void OnChanged(object source, FileSystemEventArgs e)
+        //{
 
-            LogMessage = File.ReadAllText(e.FullPath, Encoding.UTF8);
+        //    LogMessage = File.ReadAllText(e.FullPath, Encoding.UTF8);
             
-        }
+        //}
 
         public void SetLog()
         {

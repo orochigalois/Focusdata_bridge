@@ -216,7 +216,7 @@ namespace SystemTray
         {
 
             
-            logForm.SetLog();
+            //logForm.SetLog();
             logForm.Show();
 
         }
