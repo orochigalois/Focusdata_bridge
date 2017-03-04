@@ -117,26 +117,26 @@ namespace FocusDataBridge
                                 cmd = new SqlCommand("BP_AddPatient", con);
                                 cmd.CommandType = CommandType.StoredProcedure;
 
-                                SqlParameter p1 = new SqlParameter("@TITLECODE", 1);
+                                SqlParameter p1 = new SqlParameter("@TITLECODE", 1+Convert.ToInt32(row["TITLE_ID"].ToString()));
                                 p1.Direction = ParameterDirection.Input;
                                 p1.DbType = DbType.Int32;
                                 cmd.Parameters.Add(p1);
 
-                                SqlParameter p2 = new SqlParameter("@FIRSTNAME", row["CUSTOMER_NAME"].ToString());
+                                SqlParameter p2 = new SqlParameter("@FIRSTNAME", row["CUSTOMER_FIRSTNAME"].ToString());
                                 p2.Direction = ParameterDirection.Input;
                                 p2.DbType = DbType.String;
                                 cmd.Parameters.Add(p2);
 
-                                SqlParameter p3 = new SqlParameter("@MIDDLENAME", row["CUSTOMER_NAME"].ToString());
+                                SqlParameter p3 = new SqlParameter("@MIDDLENAME", "");
                                 p3.Direction = ParameterDirection.Input;
                                 p3.DbType = DbType.String;
                                 cmd.Parameters.Add(p3);
 
-                                SqlParameter p4 = new SqlParameter("@SURNAME", row["CUSTOMER_NAME"].ToString());
+                                SqlParameter p4 = new SqlParameter("@SURNAME", row["CUSTOMER_LASTNAME"].ToString());
                                 p4.Direction = ParameterDirection.Input;
                                 p4.DbType = DbType.String;
                                 cmd.Parameters.Add(p4);
-                                SqlParameter p5 = new SqlParameter("@PREFERREDNAME", row["CUSTOMER_NAME"].ToString());
+                                SqlParameter p5 = new SqlParameter("@PREFERREDNAME", row["CUSTOMER_FIRSTNAME"].ToString());
                                 p5.Direction = ParameterDirection.Input;
                                 p5.DbType = DbType.String;
                                 cmd.Parameters.Add(p5);
@@ -180,7 +180,7 @@ namespace FocusDataBridge
                                 p13.DbType = DbType.DateTime;
                                 cmd.Parameters.Add(p13);
 
-                                SqlParameter p14 = new SqlParameter("@SEXCODE", 1);
+                                SqlParameter p14 = new SqlParameter("@SEXCODE", 1+Convert.ToInt32(row["GENDER_ID"].ToString()));
                                 p14.Direction = ParameterDirection.Input;
                                 p14.DbType = DbType.Int32;
                                 cmd.Parameters.Add(p14);

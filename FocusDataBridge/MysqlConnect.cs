@@ -365,7 +365,7 @@ namespace FocusDataBridge
         /***            ForClinic BEGIN         ***/
         public DataTable GetAppointmentRequests()
         {
-            string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_NAME,CUSTOMER_GENDER,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_customer_user c on a.REQUESTING_USER_ID=c.CUSTOMER_USER_ID WHERE REQUESTING_FLAG=1";
+            string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_FIRSTNAME,CUSTOMER_LASTNAME,TITLE_ID,GENDER_ID,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_customer_user c on a.REQUESTING_USER_ID=c.CUSTOMER_USER_ID WHERE REQUESTING_FLAG=1";
 
             DataTable re = new DataTable();
             re.Clear();
@@ -374,8 +374,10 @@ namespace FocusDataBridge
             re.Columns.Add("APPOINTMENT_DATE");
             re.Columns.Add("APPOINTMENT_TIME");
             re.Columns.Add("CUSTOMER_USER_MAIL");
-            re.Columns.Add("CUSTOMER_NAME");
-            re.Columns.Add("CUSTOMER_GENDER");
+            re.Columns.Add("CUSTOMER_FIRSTNAME");
+            re.Columns.Add("CUSTOMER_LASTNAME");
+            re.Columns.Add("TITLE_ID");
+            re.Columns.Add("GENDER_ID");
             re.Columns.Add("CUSTOMER_BIRTHDAY");
             re.Columns.Add("CUSTOMER_ADDR");
             re.Columns.Add("CUSTOMER_POSTCODE");
@@ -401,8 +403,10 @@ namespace FocusDataBridge
                     _r["APPOINTMENT_DATE"] = dataReader["APPOINTMENT_DATE"].ToString();
                     _r["APPOINTMENT_TIME"] = dataReader["APPOINTMENT_TIME"].ToString();
                     _r["CUSTOMER_USER_MAIL"] = dataReader["CUSTOMER_USER_MAIL"].ToString();
-                    _r["CUSTOMER_NAME"] = dataReader["CUSTOMER_NAME"].ToString();
-                    _r["CUSTOMER_GENDER"] = dataReader["CUSTOMER_GENDER"].ToString();
+                    _r["CUSTOMER_FIRSTNAME"] = dataReader["CUSTOMER_FIRSTNAME"].ToString();
+                    _r["CUSTOMER_LASTNAME"] = dataReader["CUSTOMER_LASTNAME"].ToString();
+                    _r["TITLE_ID"] = dataReader["TITLE_ID"].ToString();
+                    _r["GENDER_ID"] = dataReader["GENDER_ID"].ToString();
                     _r["CUSTOMER_BIRTHDAY"] = dataReader["CUSTOMER_BIRTHDAY"].ToString();
                     _r["CUSTOMER_ADDR"] = dataReader["CUSTOMER_ADDR"].ToString();
                     _r["CUSTOMER_POSTCODE"] = dataReader["CUSTOMER_POSTCODE"].ToString();
@@ -450,7 +454,7 @@ namespace FocusDataBridge
             }
         }
 
-        public void SetSuccessfulTo2(string id)//2 means ocupied
+        public void SetSuccessfulTo2(string id)//2 means ocupied, failed
         {
             //Open connection
             if (this.OpenConnection() == true)
@@ -471,7 +475,7 @@ namespace FocusDataBridge
             }
         }
 
-        public void SetSuccessfulTo1(string id)
+        public void SetSuccessfulTo1(string id)//1 means successful
         {
             //Open connection
             if (this.OpenConnection() == true)
