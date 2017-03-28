@@ -567,7 +567,7 @@ namespace FocusDataBridge
                                 {
                                     DataRow _r = dtAppointments.NewRow();
                                     _r["DOCTOR_ID"] = row["UserID"];
-                                    _r["APPOINTMENT_DATE"] = date.Date;
+                                    _r["APPOINTMENT_DATE"] = date.Date.ToString("yyyy-MM-dd"); ;
                                     _r["APPOINTMENT_TIME"] = time;
 
                                     cmd = new SqlCommand("BP_IsAppointmentBooked", con);
