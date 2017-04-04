@@ -151,7 +151,7 @@ namespace FocusDataBridge
 
         public void UpdateDoctor(string surName, string firstName, int userID)
         {
-            string query = "UPDATE fd_doctor SET DOCTOR_NAME='"+ firstName +" "+ surName + "' WHERE DOCTOR_ID_IMPORT="+ userID.ToString();
+            string query = "UPDATE fd_doctor SET ACTIVE_STATUS='0', DOCTOR_NAME='" + firstName +" "+ surName + "' WHERE DOCTOR_ID_IMPORT="+ userID.ToString();
 
             //Open connection
             if (this.OpenConnection() == true)
@@ -175,7 +175,7 @@ namespace FocusDataBridge
         public void InsertDoctor(String surName,String firstName,int userID)
         {
             string name = firstName + " " + surName;
-            string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT) VALUES('"+name +"', '1','"+ userID.ToString() + "')";
+            string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT) VALUES('"+name +"', '0','"+ userID.ToString() + "')";
 
             //open connection
             if (this.OpenConnection() == true)
