@@ -430,6 +430,24 @@ namespace FocusDataBridge
 
                     mysqlConnect = new MysqlConnect();
 
+                    string clinicKey;
+                    //0. 
+                    string CLINIC_USER_MAIL = ConfigurationManager.AppSettings["CLINIC_USER_MAIL"];
+                    //CHECK IF CLINIC_USER_EMAIL IS IN fd_clinic_user
+                    if (mysqlConnect.CLINIC_USER_MAIL_ExistInTable(CLINIC_USER_MAIL))
+                    {
+                        clinicKey = mysqlConnect.GetClinicKey(CLINIC_USER_MAIL);
+                    }
+                    else
+                    {
+                        //error
+
+                        return;
+
+                    }
+
+
+
                     string DATABASE_HOST = ConfigurationManager.AppSettings["DATABASE_HOST"];
                     string DATABASE_NAME = ConfigurationManager.AppSettings["DATABASE_NAME"];
                     string DATABASE_USER = ConfigurationManager.AppSettings["DATABASE_USER"];
@@ -462,7 +480,7 @@ namespace FocusDataBridge
                                 userID = (int)rdr["UserID"];
 
                                 //CHECK IF USERID IS IN FD_DOCTOR
-                                if(mysqlConnect.IDExistInTable(userID))
+                                if (mysqlConnect.IDExistInTable(userID))
                                 {
                                     //CHECK if need to update
                                     if (!(firstName + " " + surName).ToString().Equals(mysqlConnect.GetDoctorName(userID)))
@@ -470,7 +488,15 @@ namespace FocusDataBridge
 
                                 }
                                 else
+                                {
                                     mysqlConnect.InsertDoctor(surName, firstName, userID);
+
+
+                                    string doctorKey=mysqlConnect.GetPrimaryKey();
+
+                                    mysqlConnect.Insert_fd_rel_clinic_doctor(doctorKey, clinicKey, CLINIC_USER_MAIL);
+
+                                }
                             }
                             rdr.Close();
 

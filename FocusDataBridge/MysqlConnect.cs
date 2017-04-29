@@ -86,7 +86,70 @@ namespace FocusDataBridge
             }
         }
 
-      
+
+        
+
+        public string GetClinicKey(string mail)
+        {
+            string query = "SELECT CLINIC_USER_ID FROM fd_clinic_user where CLINIC_USER_MAIL='" + mail+"'";
+
+            string result = "";
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                //Read the data and store them in the list
+                while (dataReader.Read())
+                {
+                    result = dataReader["CLINIC_USER_ID"].ToString();
+                }
+
+                //close Data Reader
+                dataReader.Close();
+
+                //close Connection
+                this.CloseConnection();
+
+                //return list to be displayed
+                return result;
+            }
+            else
+            {
+                return result;
+            }
+        }
+
+
+        public bool CLINIC_USER_MAIL_ExistInTable(String CLINIC_USER_EMAIL)
+        {
+            string query = "SELECT Count(*) FROM fd_clinic_user where CLINIC_USER_MAIL='" + CLINIC_USER_EMAIL+"'";
+            int Count = -1;
+
+            //Open Connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Mysql Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                //ExecuteScalar will return one value
+                Count = int.Parse(cmd.ExecuteScalar() + "");
+
+                //close Connection
+                this.CloseConnection();
+
+                return Count > 0;
+            }
+            else
+            {
+                return Count > 0;
+            }
+        }
+
+
         /***            fd_doctor BEGIN         ***/
 
         public bool IDExistInTable(int userID)
@@ -172,7 +235,7 @@ namespace FocusDataBridge
         }
 
 
-        public void InsertDoctor(String surName,String firstName,int userID)
+        public void InsertDoctor(string surName, string firstName,int userID)
         {
             string name = firstName + " " + surName;
             string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT) VALUES('"+name +"', '0','"+ userID.ToString() + "')";
@@ -189,6 +252,67 @@ namespace FocusDataBridge
                 //close connection
                 this.CloseConnection();
             }
+        }
+
+
+        public void Insert_fd_rel_clinic_doctor(string doctorKey, string clinicKey, string clinicMail)
+        {
+            string query = "INSERT INTO fd_rel_clinic_doctor (CLINIC_USER_ID, DOCTOR_ID, CREATE_USER) VALUES('" + clinicKey + "','" + doctorKey + "','"+ clinicMail+"')";
+
+            //open connection
+            if (this.OpenConnection() == true)
+            {
+                //create command and assign the query and connection from the constructor
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                //Execute command
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+        public string GetPrimaryKey()
+        {
+
+            string query = "SELECT LAST_INSERT_ID() as PRIMARYKEY;";
+
+            string result = "";
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                //Read the data and store them in the list
+                while (dataReader.Read())
+                {
+                    result = dataReader["PRIMARYKEY"].ToString();
+               
+                }
+
+                //close Data Reader
+                dataReader.Close();
+
+                //close Connection
+                this.CloseConnection();
+
+                //return list to be displayed
+                return result;
+            }
+            else
+            {
+                return result;
+            }
+
+
+
+
+
+
         }
 
         /***            fd_doctor END         ***/
