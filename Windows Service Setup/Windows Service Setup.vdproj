@@ -70,13 +70,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_3D8BE8A5AFB9C2A404C8139D42A62381"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_B6F55AC4AF4B57359FFC37565F65BA0D"
+        "OwnerKey" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -88,7 +82,13 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
+        "OwnerKey" = "8:_B6F55AC4AF4B57359FFC37565F65BA0D"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_3D8BE8A5AFB9C2A404C8139D42A62381"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -558,7 +558,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_7BB377D1D43741528DF16C4E7CEC75AE"
             {
-            "Name" = "8:Focusdata"
+            "Name" = "8:systemTray"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -971,7 +971,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_997F99393FC54D48AAB59681A0D275AD"
             {
-            "SourcePath" = "8:..\\FocusDataBridge\\obj\\Debug\\FocusDataBridge.exe"
+            "SourcePath" = "8:..\\FocusDataBridge\\obj\\Release\\FocusDataBridge.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_0DD3F06048154342945B514074A58402"
@@ -999,7 +999,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_D29D645F0CBD45BC8AA70BF06D0FF6C9"
             {
-            "SourcePath" = "8:..\\SystemTray\\obj\\Debug\\SystemTray.exe"
+            "SourcePath" = "8:..\\SystemTray\\obj\\Release\\SystemTray.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_0DD3F06048154342945B514074A58402"
