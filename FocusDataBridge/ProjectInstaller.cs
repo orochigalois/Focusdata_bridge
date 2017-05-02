@@ -19,8 +19,8 @@ namespace FocusDataBridge
 
         private void serviceInstaller1_AfterInstall(object sender, InstallEventArgs e)
         {
-            //Alex 17.05.01
-            //new ServiceController(serviceInstaller1.ServiceName).Start();
+            //Alex 17.05.01 run automatically after install
+            new ServiceController(serviceInstaller1.ServiceName).Start();
         }
     }
 }

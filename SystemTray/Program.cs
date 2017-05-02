@@ -133,10 +133,11 @@ namespace SystemTray
 
             foreach (ServiceController AvailableService in AvailableServices)
             {
-                //Check the service name for IIS.
+                //Check the service name for Focusdata Service.
                 if (AvailableService.ServiceName == "Focusdata Service")
                 {
                     this.WSController.ServiceName = "Focusdata Service";
+                    //hold on until Focusdata Service is launched successfully
                     WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
                     SetButtonStatus();
 

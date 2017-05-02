@@ -16,12 +16,12 @@ namespace FocusDataBridge
     public partial class ServiceBridge : ServiceBase
     {
 
-        /*DB instance*/
-        MysqlConnect mysqlConnect = new MysqlConnect();
-        BPsqlConnect bpsqlConnect = new BPsqlConnect();
-
         /*Log*/
-        LogWriter log = new LogWriter();
+        LogWriter log;
+
+        /*DB instance*/
+        MysqlConnect mysqlConnect;
+        BPsqlConnect bpsqlConnect;
 
         /*Tasks*/
         public const int Task5s_CYCLE = 5;
@@ -39,13 +39,13 @@ namespace FocusDataBridge
    
 
         /*Clinic ID*/
-        private string clinicID="";
+        private string clinicID=null;
         private string CLINIC_USER_MAIL = "";
 
 
         public ServiceBridge()
         {
-            InitializeComponent();
+            InitializeComponent();         
         }
 
    
@@ -58,50 +58,56 @@ namespace FocusDataBridge
 
         protected override void OnStart(string[] args)
         {
+            PrepareLogWriter();
             PrepareMySql();
             PrepareBPSql();
 
-            clinicID=GetClinicID();
+            task5s = new Task(Task5s, cts5s.Token, TaskCreationOptions.LongRunning);
+            task5s.Start();
 
-            if (clinicID != null)
-            {
-                task10s = new Task(Task10s, cts10s.Token, TaskCreationOptions.LongRunning);
-                task10s.Start();
+            task10s = new Task(Task10s, cts10s.Token, TaskCreationOptions.LongRunning);
+            task10s.Start();
 
-                task2s = new Task(Task2s, cts2s.Token, TaskCreationOptions.LongRunning);
-                task2s.Start();
-
-                task5s = new Task(Task5s, cts5s.Token, TaskCreationOptions.LongRunning);
-                task5s.Start();
-            }
-            else
-            {
-                LogWriter.LogWrite("OnStart():Cannot start the tasks.Please make sure DBs are connected and restart service\n");
-            }
+            task2s = new Task(Task2s, cts2s.Token, TaskCreationOptions.LongRunning);
+            task2s.Start();
+            
+           
         }
 
+        public void PrepareLogWriter()
+        {
+            try
+            {
+                log = new LogWriter();
+                log.OpenConnection();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("PrepareLogWriter():LogWriter connecting failed.\n" + e.Message);
+            }
+        }
         public void PrepareMySql()
         {
             try
             {
-                mysqlConnect = new MysqlConnect();
+                mysqlConnect = new MysqlConnect(log);
                 mysqlConnect.OpenConnection();
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("PrepareMySql():Mysql DB connecting failed.\n" + e.Message);
+                log.Write("PrepareMySql():Mysql DB connecting failed.\n" + e.Message);
             }
         }
         public void PrepareBPSql()
         {
             try
             {
-                bpsqlConnect = new BPsqlConnect();
+                bpsqlConnect = new BPsqlConnect(log);
                 bpsqlConnect.OpenConnection();
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("PrepareBPSql():BP DB connecting failed.\n" + e.Message);
+                log.Write("PrepareBPSql():BP DB connecting failed.\n" + e.Message);
             }
         }
 
@@ -118,19 +124,19 @@ namespace FocusDataBridge
                 else
                 {
                     //error
-                    LogWriter.LogWrite("GetClinicID():Clinic user does not exist. Please register at http://www.drpages.com.au/ \n");
+                    log.Write("GetClinicID():Clinic user does not exist. Please register at http://www.drpages.com.au/ \n");
                     return null;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("GetClinicID():GetClinicID failed.\n" + e.Message);
+                log.Write("GetClinicID():GetClinicID failed.\n" + e.Message);
                 return null;
             }
         }
 
 
-        private void Task5s()//Keep DB alive
+        private void Task5s()//Keep DB & Walive 
         {
             CancellationToken cancellation = cts5s.Token;
             TimeSpan interval = TimeSpan.FromSeconds(Task5s_CYCLE);
@@ -139,32 +145,50 @@ namespace FocusDataBridge
             {
                 try
                 {
+                    if(clinicID==null)
+                        clinicID = GetClinicID();
                     try
                     {
-                        if(mysqlConnect.getConnectionState() == ConnectionState.Closed)
+                        if (log.getConnectionState() == Constant.CLOSED)
                         {
-                            mysqlConnect.OpenConnection();
-                            LogWriter.LogWrite("Reconnect to mysql successfully");
+                            Console.WriteLine("logWriter is disconnected");
+                            log.OpenConnection();
                         }
+                       
 
                     }
                     catch (Exception e)
                     {
-                        LogWriter.LogWrite("Task5s():Reconnect to mysql failed.\n" + e.Message);
+                        Console.WriteLine("Task5s():Reconnect to LogWriter failed.\n" + e.Message);
+                    }
+
+                    try
+                    {
+                        if(mysqlConnect.getConnectionState() == ConnectionState.Closed)
+                        {
+                            log.Write("mysql is disconnected");
+                            mysqlConnect.OpenConnection();
+                        }
+                       
+
+                    }
+                    catch (Exception e)
+                    {
+                        log.Write("Task5s():Reconnect to mysql failed.\n" + e.Message);
                     }
 
                     try
                     {
                         if (bpsqlConnect.getConnectionState() == ConnectionState.Closed)
                         {
+                            log.Write("BP DB is disconnected");
                             bpsqlConnect.OpenConnection();
-                            LogWriter.LogWrite("Reconnect to BP DB successfully");
                         }
 
                     }
                     catch (Exception e)
                     {
-                        LogWriter.LogWrite("Task5s():Reconnect to BP DB failed.\n" + e.Message);
+                        log.Write("Task5s():Reconnect to BP DB failed.\n" + e.Message);
                     }
 
 
@@ -177,7 +201,7 @@ namespace FocusDataBridge
                 catch (Exception ex)
                 {
 
-                    LogWriter.LogWrite("Task5s():Reconnect to DB failed\n" + ex.Message);
+                    log.Write("Task5s():Reconnect to DB failed\n" + ex.Message);
                     //Add to System Log
                     eventLog1.WriteEntry("Bridge encountered an error '" +
                     ex.Message + "'", EventLogEntryType.Error);
@@ -201,6 +225,9 @@ namespace FocusDataBridge
             {
                 try
                 {
+
+                    if (clinicID == null)
+                        continue;
                     try
                     {
                         DataTable myRequests = mysqlConnect.GetAppointmentRequests(clinicID);
@@ -232,8 +259,11 @@ namespace FocusDataBridge
                                 else if (IsAppointmentBooked == 0)
                                 {
                                     //4.[BP_AddAppointment]
-                                    if(bpsqlConnect.AddAppointment(row, patientID))
+                                    if (bpsqlConnect.AddAppointment(row, patientID))
+                                    {
+                                        log.Write("Add an appointment successfully");
                                         mysqlConnect.SetSuccessfulTo1(row["DOCTOR_APPOINTMENT_TIME_ID"].ToString());
+                                    }
                                 }
 
                             }
@@ -243,7 +273,7 @@ namespace FocusDataBridge
                     }
                     catch (Exception e)
                     {     
-                        LogWriter.LogWrite("Task2s():Sync mysql->BP failed.\n" + e.Message);
+                        log.Write("Task2s():Sync mysql->BP failed.\n" + e.Message);
                     }
 
                     if (cancellation.IsCancellationRequested)
@@ -255,7 +285,7 @@ namespace FocusDataBridge
                 catch (Exception ex)
                 {
                     
-                    LogWriter.LogWrite("Task2s():Sync mysql->BP failed.\n" + ex.Message);
+                    log.Write("Task2s():Sync mysql->BP failed.\n" + ex.Message);
                     //Add to System Log
                     eventLog1.WriteEntry("Bridge encountered an error '" +
                     ex.Message + "'", EventLogEntryType.Error);
@@ -276,7 +306,9 @@ namespace FocusDataBridge
             {
                 try
                 {
- 
+                    if (clinicID == null)
+                        continue;
+
                     try
                     {
 
@@ -302,6 +334,7 @@ namespace FocusDataBridge
                             {
                                 string doctorID = mysqlConnect.InsertDoctor(surName, firstName, userID);
                                 mysqlConnect.Insert_fd_rel_clinic_doctor(doctorID, clinicID, CLINIC_USER_MAIL);
+                                log.Write("Sync a doctor ID:"+ doctorID + "successfully");
                             }
                         }
                             
@@ -311,12 +344,12 @@ namespace FocusDataBridge
                         //2.1 Fill dtSessions
                         DataTable dtSessions=bpsqlConnect.GetAllSessions();
                         if (dtSessions == null)
-                            return;
+                            continue;
 
                         //2.2 Calculate & Fill dtAppointments
                         DataTable dtAppointments = bpsqlConnect.GetDTAppointments(dtSessions);
                         if (dtAppointments == null)
-                            return;
+                            continue;
 
                         //2.3 dtAppointments -> fd_rel_doctor_appointment_time
                         foreach (DataRow dataRow in dtAppointments.Rows)
@@ -336,7 +369,7 @@ namespace FocusDataBridge
                     }
                     catch (Exception e)
                     {
-                        LogWriter.LogWrite("Task10s():Sync BP->mysql failed.\n" + e.Message);
+                        log.Write("Task10s():Sync BP->mysql failed.\n" + e.Message);
                     }
 
 
@@ -349,7 +382,7 @@ namespace FocusDataBridge
                 }
                 catch (Exception ex)
                 {
-                    LogWriter.LogWrite("Task10s():Sync BP->mysql failed.\n" + ex.Message);
+                    log.Write("Task10s():Sync BP->mysql failed.\n" + ex.Message);
                     //Add to System Log
                     eventLog1.WriteEntry("Bridge encountered an error '" +
                     ex.Message + "'", EventLogEntryType.Error);
@@ -364,13 +397,13 @@ namespace FocusDataBridge
         protected override void OnStop()
         {
             //System.IO.File.Create(AppDomain.CurrentDomain.BaseDirectory + "OnStopAlex.txt");
-
+          
             cts10s.Cancel();
             task10s.Wait();
 
             cts2s.Cancel();
             task2s.Wait();
-
+            
             if (mysqlConnect.getConnectionState() == ConnectionState.Open)
                 mysqlConnect.CloseConnection();
 

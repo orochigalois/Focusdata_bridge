@@ -10,11 +10,13 @@ namespace FocusDataBridge
 {
     class BPsqlConnect
     {
+        LogWriter log;
         private SqlConnection connection;
-
+        
         //Constructor
-        public BPsqlConnect()
+        public BPsqlConnect(LogWriter log)
         {
+            this.log = log;
             string DATABASE_HOST = ConfigurationManager.AppSettings["DATABASE_HOST"];
             string DATABASE_NAME = ConfigurationManager.AppSettings["DATABASE_NAME"];
             string DATABASE_USER = ConfigurationManager.AppSettings["DATABASE_USER"];
@@ -36,12 +38,12 @@ namespace FocusDataBridge
             try
             {
                 connection.Open();
-                LogWriter.LogWrite("Connect to BP DB successfully");
+                log.Write("Connect to BP DB successfully");
                 return true;
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:OpenConnection():Cannot connect to BP DB server.\n" + e.Message);
+                log.Write("BPSQL:OpenConnection():Cannot connect to BP DB server.\n" + e.Message);
                 return false;
             }
         }
@@ -52,11 +54,12 @@ namespace FocusDataBridge
             try
             {
                 connection.Close();
+                log.Write("Connection to BP DB is closed");
                 return true;
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:CloseConnection():Cannot close BP DB connection.\n" + e.Message);
+                log.Write("BPSQL:CloseConnection():Cannot close BP DB connection.\n" + e.Message);
                 return false;
             }
         }
@@ -109,13 +112,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:getPatientID(): DB connection is not connected or broken");
+                    log.Write("BPSQL:getPatientID(): DB connection is not connected or broken");
                     return Constant.INVALID_ID;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:getPatientID(): getPatientID failed\n"+e.Message);
+                log.Write("BPSQL:getPatientID(): getPatientID failed\n"+e.Message);
                 return Constant.INVALID_ID;
             }
 
@@ -313,13 +316,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:AddPatient(): DB connection is not connected or broken");
+                    log.Write("BPSQL:AddPatient(): DB connection is not connected or broken");
                     return Constant.INVALID_ID;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:AddPatient(): AddPatient failed\n" + e.Message);
+                log.Write("BPSQL:AddPatient(): AddPatient failed\n" + e.Message);
                 return Constant.INVALID_ID;
             }
 
@@ -367,13 +370,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:IsAppointmentBooked(): DB connection is not connected or broken");
+                    log.Write("BPSQL:IsAppointmentBooked(): DB connection is not connected or broken");
                     return Constant.INVALID_ID;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:IsAppointmentBooked(): failed\n" + e.Message);
+                log.Write("BPSQL:IsAppointmentBooked(): failed\n" + e.Message);
                 return Constant.INVALID_ID;
             }
 
@@ -424,18 +427,18 @@ namespace FocusDataBridge
 
                     cmd.ExecuteNonQuery();
 
-                    //this.CloseConnection();
+               
                     return true;
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:AddAppointment(): DB connection is not connected or broken");
+                    log.Write("BPSQL:AddAppointment(): DB connection is not connected or broken");
                     return false;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:AddAppointment(): failed\n" + e.Message);
+                log.Write("BPSQL:AddAppointment(): failed\n" + e.Message);
                 return false;
             }
 
@@ -491,13 +494,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:GetAllUsers(): DB connection is not connected or broken");
+                    log.Write("BPSQL:GetAllUsers(): DB connection is not connected or broken");
                     return null;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:GetAllUsers(): failed\n" + e.Message);
+                log.Write("BPSQL:GetAllUsers(): failed\n" + e.Message);
                 return null;
             }
 
@@ -572,6 +575,7 @@ namespace FocusDataBridge
                         _r["CycleWeek"] = clinic1_sessions_CycleWeek.ToString();
                         _r["CycleDate"] = clinic1_sessions_CycleDate.ToString();
                         dtSessions.Rows.Add(_r);
+                        log.Write("Sync a session successfully");
 
                     }
                     rdr.Close();
@@ -582,13 +586,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:GetAllSessions(): DB connection is not connected or broken");
+                    log.Write("BPSQL:GetAllSessions(): DB connection is not connected or broken");
                     return null;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:GetAllSessions(): failed\n" + e.Message);
+                log.Write("BPSQL:GetAllSessions(): failed\n" + e.Message);
                 return null;
             }
 
@@ -676,13 +680,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("BPSQL:GetDTAppointments(): DB connection is not connected or broken");
+                    log.Write("BPSQL:GetDTAppointments(): DB connection is not connected or broken");
                     return null;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("BPSQL:GetDTAppointments(): failed\n" + e.Message);
+                log.Write("BPSQL:GetDTAppointments(): failed\n" + e.Message);
                 return null;
             }
 

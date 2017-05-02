@@ -10,6 +10,8 @@ namespace FocusDataBridge
 {
     class MysqlConnect
     {
+        LogWriter log;
+
         private MySqlConnection connection;
         private string FOCUSDATA_DATABASE_HOST;
         private string FOCUSDATA_DATABASE_NAME;
@@ -17,8 +19,9 @@ namespace FocusDataBridge
         private string FOCUSDATA_DATABASE_PASS;
 
         //Constructor
-        public MysqlConnect()
+        public MysqlConnect(LogWriter log)
         {
+            this.log = log;
             FOCUSDATA_DATABASE_HOST = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_HOST"];
             FOCUSDATA_DATABASE_NAME = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_NAME"];
             FOCUSDATA_DATABASE_USER = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_USER"];
@@ -44,7 +47,7 @@ namespace FocusDataBridge
             try
             {
                 connection.Open();
-                LogWriter.LogWrite("Connect to mysql successfully");
+                log.Write("Connect to mysql successfully");
                 return true;
             }
             catch (MySqlException ex)
@@ -58,10 +61,10 @@ namespace FocusDataBridge
                 {
 
                     case 1045:
-                        LogWriter.LogWrite("MYSQL:OpenConnection():Invalid focusdata server username/password, please try again\n" + ex.Message);
+                        log.Write("MYSQL:OpenConnection():Invalid focusdata server username/password, please try again\n" + ex.Message);
                         break;
                     default:
-                        LogWriter.LogWrite("MYSQL:OpenConnection():Cannot connect to focusdata server.\n" + ex.Message);
+                        log.Write("MYSQL:OpenConnection():Cannot connect to focusdata server.\n" + ex.Message);
                         break;
 
                 }
@@ -75,11 +78,12 @@ namespace FocusDataBridge
             try
             {
                 connection.Close();
+                log.Write("Connection to mysql is closed");
                 return true;
             }
             catch (MySqlException ex)
             {
-                LogWriter.LogWrite("MYSQL:CloseConnection():Cannot close mysql connection.\n" + ex.Message);
+                log.Write("MYSQL:CloseConnection():Cannot close mysql connection.\n" + ex.Message);
                 return false;
             }
         }
@@ -117,13 +121,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:GetClinicKey(): DB connection is not connected or broken");
+                    log.Write("MYSQL:GetClinicKey(): DB connection is not connected or broken");
                     return result;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:GetClinicKey(): failed\n" + e.Message);
+                log.Write("MYSQL:GetClinicKey(): failed\n" + e.Message);
                 return result;
             }
         }
@@ -152,13 +156,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:CLINIC_USER_MAIL_ExistInTable(): DB connection is not connected or broken");
+                    log.Write("MYSQL:CLINIC_USER_MAIL_ExistInTable(): DB connection is not connected or broken");
                     return Count > 0;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:CLINIC_USER_MAIL_ExistInTable(): failed\n" + e.Message);
+                log.Write("MYSQL:CLINIC_USER_MAIL_ExistInTable(): failed\n" + e.Message);
                 return Count > 0;
             }
         }
@@ -188,13 +192,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:IDExistInTable(): DB connection is not connected or broken");
+                    log.Write("MYSQL:IDExistInTable(): DB connection is not connected or broken");
                     return Count > 0;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:IDExistInTable(): failed\n" + e.Message);
+                log.Write("MYSQL:IDExistInTable(): failed\n" + e.Message);
                 return Count > 0;
             }
         }
@@ -231,13 +235,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:GetDoctorName(): DB connection is not connected or broken");
+                    log.Write("MYSQL:GetDoctorName(): DB connection is not connected or broken");
                     return result;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:GetDoctorName(): failed\n" + e.Message);
+                log.Write("MYSQL:GetDoctorName(): failed\n" + e.Message);
                 return result;
             }
         }
@@ -264,12 +268,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:UpdateDoctor(): DB connection is not connected or broken");
+                    log.Write("MYSQL:UpdateDoctor(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:UpdateDoctor(): failed\n" + e.Message);
+                log.Write("MYSQL:UpdateDoctor(): failed\n" + e.Message);
             }
         }
 
@@ -318,13 +322,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:InsertDoctor(): DB connection is not connected or broken");
+                    log.Write("MYSQL:InsertDoctor(): DB connection is not connected or broken");
                     return result;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:InsertDoctor(): failed\n" + e.Message);
+                log.Write("MYSQL:InsertDoctor(): failed\n" + e.Message);
                 return result;
             }
         }
@@ -351,12 +355,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:Insert_fd_rel_clinic_doctor(): DB connection is not connected or broken");
+                    log.Write("MYSQL:Insert_fd_rel_clinic_doctor(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:Insert_fd_rel_clinic_doctor(): failed\n" + e.Message);
+                log.Write("MYSQL:Insert_fd_rel_clinic_doctor(): failed\n" + e.Message);
             }
         }
         
@@ -386,13 +390,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:GetHuangYeDOCTOR_ID(): DB connection is not connected or broken");
+                    log.Write("MYSQL:GetHuangYeDOCTOR_ID(): DB connection is not connected or broken");
                     return DOCTOR_ID;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:GetHuangYeDOCTOR_ID(): failed\n" + e.Message);
+                log.Write("MYSQL:GetHuangYeDOCTOR_ID(): failed\n" + e.Message);
                 return DOCTOR_ID;
             }
         }
@@ -423,13 +427,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:AppExistInTable(): DB connection is not connected or broken");
+                    log.Write("MYSQL:AppExistInTable(): DB connection is not connected or broken");
                     return Count > 0;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:AppExistInTable(): failed\n" + e.Message);
+                log.Write("MYSQL:AppExistInTable(): failed\n" + e.Message);
                 return Count > 0;
             }
 
@@ -467,12 +471,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:InsertAppointment(): DB connection is not connected or broken");
+                    log.Write("MYSQL:InsertAppointment(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:InsertAppointment(): failed\n" + e.Message);
+                log.Write("MYSQL:InsertAppointment(): failed\n" + e.Message);
             }
         }
 
@@ -508,13 +512,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:GetAppActive(): DB connection is not connected or broken");
+                    log.Write("MYSQL:GetAppActive(): DB connection is not connected or broken");
                     return result;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:GetAppActive(): failed\n" + e.Message);
+                log.Write("MYSQL:GetAppActive(): failed\n" + e.Message);
                 return result;
             }
         }
@@ -549,12 +553,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:UpdateAppointment(): DB connection is not connected or broken");
+                    log.Write("MYSQL:UpdateAppointment(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:UpdateAppointment(): failed\n" + e.Message);
+                log.Write("MYSQL:UpdateAppointment(): failed\n" + e.Message);
             }
         }
 
@@ -627,13 +631,13 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:GetAppointmentRequests(): DB connection is not connected or broken");
+                    log.Write("MYSQL:GetAppointmentRequests(): DB connection is not connected or broken");
                     return null;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:GetAppointmentRequests(): failed\n" + e.Message);
+                log.Write("MYSQL:GetAppointmentRequests(): failed\n" + e.Message);
                 return null;
             }
 
@@ -657,12 +661,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:ResetAllRequestFlag(): DB connection is not connected or broken");
+                    log.Write("MYSQL:ResetAllRequestFlag(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:ResetAllRequestFlag(): failed\n" + e.Message);
+                log.Write("MYSQL:ResetAllRequestFlag(): failed\n" + e.Message);
             }
         }
 
@@ -687,12 +691,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:SetSuccessfulTo2(): DB connection is not connected or broken");
+                    log.Write("MYSQL:SetSuccessfulTo2(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:SetSuccessfulTo2(): failed\n" + e.Message);
+                log.Write("MYSQL:SetSuccessfulTo2(): failed\n" + e.Message);
             }
 
         }
@@ -717,12 +721,12 @@ namespace FocusDataBridge
                 }
                 else
                 {
-                    LogWriter.LogWrite("MYSQL:SetSuccessfulTo1(): DB connection is not connected or broken");
+                    log.Write("MYSQL:SetSuccessfulTo1(): DB connection is not connected or broken");
                 }
             }
             catch (Exception e)
             {
-                LogWriter.LogWrite("MYSQL:SetSuccessfulTo1(): failed\n" + e.Message);
+                log.Write("MYSQL:SetSuccessfulTo1(): failed\n" + e.Message);
             }
         }
 

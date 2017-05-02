@@ -1,30 +1,31 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Windows.Forms;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration.Install;
+using System.Linq;
+using System.Threading.Tasks;
+
+
+using System.Diagnostics;
+using System.Windows.Forms;
+
 using System.Reflection;
 using System.IO;
 
 namespace SystemTray
 {
-    // Taken from:http://msdn2.microsoft.com/en-us/library/
-    // system.configuration.configurationmanager.aspx
-    // Set 'RunInstaller' attribute to true.
-
     [RunInstaller(true)]
-    public class InstallerClass : System.Configuration.Install.Installer
+    public partial class InstallerTray : System.Configuration.Install.Installer
     {
-        public InstallerClass()
-          : base()
+        public InstallerTray() : base()
         {
+            InitializeComponent();
             // Attach the 'Committed' event.
             this.Committed += new InstallEventHandler(MyInstaller_Committed);
             // Attach the 'Committing' event.
             this.Committing += new InstallEventHandler(MyInstaller_Committing);
         }
-
         // Event handler for 'Committing' event.
         private void MyInstaller_Committing(object sender, InstallEventArgs e)
         {
@@ -39,11 +40,10 @@ namespace SystemTray
             try
             {
                 //Alex 17.05.01
-
-                //Directory.SetCurrentDirectory(Path.GetDirectoryName
-                //(Assembly.GetExecutingAssembly().Location));
-                //Process.Start(Path.GetDirectoryName(
-                //  Assembly.GetExecutingAssembly().Location) + "\\SystemTray.exe");
+                Directory.SetCurrentDirectory(Path.GetDirectoryName
+                (Assembly.GetExecutingAssembly().Location));
+                Process.Start(Path.GetDirectoryName(
+                  Assembly.GetExecutingAssembly().Location) + "\\SystemTray.exe");
             }
             catch
             {
@@ -69,4 +69,6 @@ namespace SystemTray
             base.Rollback(savedState);
         }
     }
+
+    
 }

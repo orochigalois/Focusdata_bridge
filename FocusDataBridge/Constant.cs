@@ -8,6 +8,9 @@ namespace FocusDataBridge
 {
     class Constant
     {
+        public const int CLOSED = 0;
+        public const int OPEN = 1;
+
         public const int INVALID_ID = -99999;
 
         public static List<string> getTimes(int start, int end, int length)
