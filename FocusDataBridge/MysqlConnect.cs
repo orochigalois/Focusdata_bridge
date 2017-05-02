@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
 using System.IO;
-//Add MySql Library
 using MySql.Data.MySqlClient;
 using System.Configuration;
 using System.Data;
@@ -13,40 +11,40 @@ namespace FocusDataBridge
     class MysqlConnect
     {
         private MySqlConnection connection;
-        private string server;
-        private string database;
-        private string uid;
-        private string password;
+        private string FOCUSDATA_DATABASE_HOST;
+        private string FOCUSDATA_DATABASE_NAME;
+        private string FOCUSDATA_DATABASE_USER;
+        private string FOCUSDATA_DATABASE_PASS;
 
         //Constructor
         public MysqlConnect()
         {
-            Initialize();
-        }
-
-        //Initialize values
-        private void Initialize()
-        {
-
-            string FOCUSDATA_DATABASE_HOST = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_HOST"];
-            string FOCUSDATA_DATABASE_NAME = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_NAME"];
-            string FOCUSDATA_DATABASE_USER = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_USER"];
-            string FOCUSDATA_DATABASE_PASS = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_PASS"];
+            FOCUSDATA_DATABASE_HOST = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_HOST"];
+            FOCUSDATA_DATABASE_NAME = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_NAME"];
+            FOCUSDATA_DATABASE_USER = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_USER"];
+            FOCUSDATA_DATABASE_PASS = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_PASS"];
 
             string connectionString;
             connectionString = "SERVER=" + FOCUSDATA_DATABASE_HOST + ";" + "DATABASE=" + FOCUSDATA_DATABASE_NAME + ";" + "UID=" + FOCUSDATA_DATABASE_USER + ";" + "PASSWORD=" + FOCUSDATA_DATABASE_PASS + ";";
 
             connection = new MySqlConnection(connectionString);
+            
         }
 
+        public ConnectionState getConnectionState()
+        {
+            return connection.State;
+        }
+
+        
 
         //open connection to database
-        private bool OpenConnection()
+        public bool OpenConnection()
         {
             try
             {
                 connection.Open();
-                LogWriter.LogWrite("Connect to Focusdata successfully");
+                LogWriter.LogWrite("Connect to mysql successfully");
                 return true;
             }
             catch (MySqlException ex)
@@ -55,24 +53,24 @@ namespace FocusDataBridge
                 //The two most common error numbers when connecting are as follows:
                 //0: Cannot connect to server.
                 //1045: Invalid user name and/or password.
+
                 switch (ex.Number)
                 {
-                    case 0:
-                        Console.WriteLine("Cannot connect to server.  Contact administrator");
-                        LogWriter.LogWrite("Cannot connect to focusdata server.  Contact administrator");
-                        break;
 
                     case 1045:
-                        Console.WriteLine("Invalid username/password, please try again");
-                        LogWriter.LogWrite("Invalid focusdata server username/password, please try again");
+                        LogWriter.LogWrite("MYSQL:OpenConnection():Invalid focusdata server username/password, please try again\n" + ex.Message);
                         break;
+                    default:
+                        LogWriter.LogWrite("MYSQL:OpenConnection():Cannot connect to focusdata server.\n" + ex.Message);
+                        break;
+
                 }
                 return false;
             }
         }
 
         //Close connection
-        private bool CloseConnection()
+        public bool CloseConnection()
         {
             try
             {
@@ -81,44 +79,51 @@ namespace FocusDataBridge
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine(ex.Message);
+                LogWriter.LogWrite("MYSQL:CloseConnection():Cannot close mysql connection.\n" + ex.Message);
                 return false;
             }
         }
 
 
-        
+        //______________________________________________________________________________________________________Main Logic
 
         public string GetClinicKey(string mail)
         {
-            string query = "SELECT CLINIC_USER_ID FROM fd_clinic_user where CLINIC_USER_MAIL='" + mail+"'";
-
             string result = "";
-            //Open connection
-            if (this.OpenConnection() == true)
+            try
             {
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
+                string query = "SELECT CLINIC_USER_ID FROM fd_clinic_user where CLINIC_USER_MAIL='" + mail + "'";
 
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                //Open connection
+                if (connection.State == ConnectionState.Open)
                 {
-                    result = dataReader["CLINIC_USER_ID"].ToString();
+                    //Create Command
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    //Create a data reader and Execute the command
+                    MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                    //Read the data and store them in the list
+                    while (dataReader.Read())
+                    {
+                        result = dataReader["CLINIC_USER_ID"].ToString();
+                    }
+
+                    //close Data Reader
+                    dataReader.Close();
+
+      
+                    //return list to be displayed
+                    return result;
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
-                return result;
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:GetClinicKey(): DB connection is not connected or broken");
+                    return result;
+                }
             }
-            else
+            catch (Exception e)
             {
+                LogWriter.LogWrite("MYSQL:GetClinicKey(): failed\n" + e.Message);
                 return result;
             }
         }
@@ -126,53 +131,70 @@ namespace FocusDataBridge
 
         public bool CLINIC_USER_MAIL_ExistInTable(String CLINIC_USER_EMAIL)
         {
-            string query = "SELECT Count(*) FROM fd_clinic_user where CLINIC_USER_MAIL='" + CLINIC_USER_EMAIL+"'";
             int Count = -1;
+            try
+            { 
+                string query = "SELECT Count(*) FROM fd_clinic_user where CLINIC_USER_MAIL='" + CLINIC_USER_EMAIL+"'";
+                
+                //Open Connection
+                if (connection.State == ConnectionState.Open)
+                {
+                    //Create Mysql Command
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
 
-            //Open Connection
-            if (this.OpenConnection() == true)
-            {
-                //Create Mysql Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
+                    //ExecuteScalar will return one value
+                    Count = int.Parse(cmd.ExecuteScalar() + "");
 
-                //ExecuteScalar will return one value
-                Count = int.Parse(cmd.ExecuteScalar() + "");
+                    //close Connection
+                    //this.CloseConnection();
 
-                //close Connection
-                this.CloseConnection();
-
-                return Count > 0;
+                    return Count > 0;
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:CLINIC_USER_MAIL_ExistInTable(): DB connection is not connected or broken");
+                    return Count > 0;
+                }
             }
-            else
+            catch (Exception e)
             {
+                LogWriter.LogWrite("MYSQL:CLINIC_USER_MAIL_ExistInTable(): failed\n" + e.Message);
                 return Count > 0;
             }
         }
 
 
-        /***            fd_doctor BEGIN         ***/
+
 
         public bool IDExistInTable(int userID)
         {
-            string query = "SELECT Count(*) FROM fd_doctor where DOCTOR_ID_IMPORT="+userID.ToString();
             int Count = -1;
-
-            //Open Connection
-            if (this.OpenConnection() == true)
+            try
             {
-                //Create Mysql Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
+                string query = "SELECT Count(*) FROM fd_doctor where DOCTOR_ID_IMPORT=" + userID.ToString();
+                
+                if (connection.State == ConnectionState.Open)
+                {
+                    //Create Mysql Command
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
 
-                //ExecuteScalar will return one value
-                Count = int.Parse(cmd.ExecuteScalar() + "");
+                    //ExecuteScalar will return one value
+                    Count = int.Parse(cmd.ExecuteScalar() + "");
 
-                //close Connection
-                this.CloseConnection();
+                    //close Connection
+                    //this.CloseConnection();
 
-                return Count>0;
+                    return Count > 0;
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:IDExistInTable(): DB connection is not connected or broken");
+                    return Count > 0;
+                }
             }
-            else
+            catch (Exception e)
             {
+                LogWriter.LogWrite("MYSQL:IDExistInTable(): failed\n" + e.Message);
                 return Count > 0;
             }
         }
@@ -180,199 +202,238 @@ namespace FocusDataBridge
 
         public string GetDoctorName(int userID)
         {
-            string query = "SELECT DOCTOR_NAME FROM fd_doctor where DOCTOR_ID_IMPORT="+ userID.ToString();
-
-            string result="";
-            //Open connection
-            if (this.OpenConnection() == true)
+            string result = "";
+            try
             {
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
+                string query = "SELECT DOCTOR_NAME FROM fd_doctor where DOCTOR_ID_IMPORT=" + userID.ToString();
 
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                if (connection.State == ConnectionState.Open)
                 {
-                    result = dataReader["DOCTOR_NAME"].ToString();
+                    //Create Command
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    //Create a data reader and Execute the command
+                    MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                    //Read the data and store them in the list
+                    while (dataReader.Read())
+                    {
+                        result = dataReader["DOCTOR_NAME"].ToString();
+                    }
+
+                    //close Data Reader
+                    dataReader.Close();
+
+                    //close Connection
+                    //this.CloseConnection();
+
+                    //return list to be displayed
+                    return result;
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
-                return result;
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:GetDoctorName(): DB connection is not connected or broken");
+                    return result;
+                }
             }
-            else
+            catch (Exception e)
             {
+                LogWriter.LogWrite("MYSQL:GetDoctorName(): failed\n" + e.Message);
                 return result;
             }
         }
 
         public void UpdateDoctor(string surName, string firstName, int userID)
         {
-            string query = "UPDATE fd_doctor SET ACTIVE_STATUS='0', DOCTOR_NAME='" + firstName +" "+ surName + "' WHERE DOCTOR_ID_IMPORT="+ userID.ToString();
-
-            //Open connection
-            if (this.OpenConnection() == true)
+            try
             {
-                //create mysql command
-                MySqlCommand cmd = new MySqlCommand();
-                //Assign the query using CommandText
-                cmd.CommandText = query;
-                //Assign the connection using Connection
-                cmd.Connection = connection;
+                string query = "UPDATE fd_doctor SET ACTIVE_STATUS='0', DOCTOR_NAME='" + firstName + " " + surName + "' WHERE DOCTOR_ID_IMPORT=" + userID.ToString();
 
-                //Execute query
-                cmd.ExecuteNonQuery();
+                //Open connection
+                if (connection.State == ConnectionState.Open)
+                {
+                    //create mysql command
+                    MySqlCommand cmd = new MySqlCommand();
+                    //Assign the query using CommandText
+                    cmd.CommandText = query;
+                    //Assign the connection using Connection
+                    cmd.Connection = connection;
 
-                //close connection
-                this.CloseConnection();
+                    //Execute query
+                    cmd.ExecuteNonQuery();
+
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:UpdateDoctor(): DB connection is not connected or broken");
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:UpdateDoctor(): failed\n" + e.Message);
             }
         }
 
 
-        public void InsertDoctor(string surName, string firstName,int userID)
+        public string InsertDoctor(string surName, string firstName,int userID)
         {
-            string name = firstName + " " + surName;
-            string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT) VALUES('"+name +"', '0','"+ userID.ToString() + "')";
-
-            //open connection
-            if (this.OpenConnection() == true)
+            string result = "";
+            try
             {
-                //create command and assign the query and connection from the constructor
-                MySqlCommand cmd = new MySqlCommand(query, connection);
+                string name = firstName + " " + surName;
+                string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT) VALUES('" + name + "', '0','" + userID.ToString() + "')";
                 
-                //Execute command
-                cmd.ExecuteNonQuery();
+                //open connection
+                if (connection.State == ConnectionState.Open)
+                {
+                    //create command and assign the query and connection from the constructor
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
 
-                //close connection
-                this.CloseConnection();
+                    //Execute command
+                    cmd.ExecuteNonQuery();
+
+                    query = "SELECT LAST_INSERT_ID() as PRIMARYKEY;";
+
+                    //Create Command
+                    cmd = new MySqlCommand(query, connection);
+                    //Create a data reader and Execute the command
+                    MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                    //Read the data and store them in the list
+                    while (dataReader.Read())
+                    {
+                        result = dataReader["PRIMARYKEY"].ToString();
+
+                    }
+
+                    //close Data Reader
+                    dataReader.Close();
+
+                    //close Connection
+                    //this.CloseConnection();
+
+                    //return list to be displayed
+                    return result;
+
+
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:InsertDoctor(): DB connection is not connected or broken");
+                    return result;
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:InsertDoctor(): failed\n" + e.Message);
+                return result;
             }
         }
+
+
+       
 
 
         public void Insert_fd_rel_clinic_doctor(string doctorKey, string clinicKey, string clinicMail)
         {
-            string query = "INSERT INTO fd_rel_clinic_doctor (CLINIC_USER_ID, DOCTOR_ID, CREATE_USER) VALUES('" + clinicKey + "','" + doctorKey + "','"+ clinicMail+"')";
-
-            //open connection
-            if (this.OpenConnection() == true)
+            try
             {
-                //create command and assign the query and connection from the constructor
-                MySqlCommand cmd = new MySqlCommand(query, connection);
+                string query = "INSERT INTO fd_rel_clinic_doctor (CLINIC_USER_ID, DOCTOR_ID, CREATE_USER) VALUES('" + clinicKey + "','" + doctorKey + "','" + clinicMail + "')";
 
-                //Execute command
-                cmd.ExecuteNonQuery();
-
-                //close connection
-                this.CloseConnection();
-            }
-        }
-
-        public string GetPrimaryKey()
-        {
-
-            string query = "SELECT LAST_INSERT_ID() as PRIMARYKEY;";
-
-            string result = "";
-            //Open connection
-            if (this.OpenConnection() == true)
-            {
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
-
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                //open connection
+                if (connection.State == ConnectionState.Open)
                 {
-                    result = dataReader["PRIMARYKEY"].ToString();
-               
+                    //create command and assign the query and connection from the constructor
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                    //Execute command
+                    cmd.ExecuteNonQuery();
+
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
-                return result;
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:Insert_fd_rel_clinic_doctor(): DB connection is not connected or broken");
+                }
             }
-            else
+            catch (Exception e)
             {
-                return result;
+                LogWriter.LogWrite("MYSQL:Insert_fd_rel_clinic_doctor(): failed\n" + e.Message);
             }
-
-
-
-
-
-
         }
+        
 
-        /***            fd_doctor END         ***/
-
-
-        /***            fd_rel_doctor_appointment_time BEGIN         ***/
         public string GetHuangYeDOCTOR_ID(string ClinicID)
         {
-            string query = "SELECT DOCTOR_ID FROM fd_doctor where DOCTOR_ID_IMPORT=" + ClinicID;
             string DOCTOR_ID = "";
-
-            
-
-            MySqlCommand cmd = new MySqlCommand(query, connection);
-
-            MySqlDataReader dataReader = cmd.ExecuteReader();
-
-            //Read the data and store them in the list
-            while (dataReader.Read())
+            try
             {
-                DOCTOR_ID = dataReader["DOCTOR_ID"].ToString();
+                string query = "SELECT DOCTOR_ID FROM fd_doctor where DOCTOR_ID_IMPORT=" + ClinicID;
+
+                if (connection.State == ConnectionState.Open)
+                {
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                    MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                    //Read the data and store them in the list
+                    while (dataReader.Read())
+                    {
+                        DOCTOR_ID = dataReader["DOCTOR_ID"].ToString();
+                    }
+
+                    //close Data Reader
+                    dataReader.Close();
+                    return DOCTOR_ID;
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:GetHuangYeDOCTOR_ID(): DB connection is not connected or broken");
+                    return DOCTOR_ID;
+                }
             }
-
-            //close Data Reader
-            dataReader.Close();
-
-
-            return DOCTOR_ID;
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:GetHuangYeDOCTOR_ID(): failed\n" + e.Message);
+                return DOCTOR_ID;
+            }
         }
 
         public bool AppExistInTable(DataRow dr)
         {
             int Count = -1;
-            if (this.OpenConnection() == true)
+            try
             {
+                if (connection.State == ConnectionState.Open)
+                {
+                    if (GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString()).Equals(""))
+                        return false;
 
-                if (GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString()).Equals(""))
-                    return false;
+                    string query = "SELECT  Count(*) FROM fd_rel_doctor_appointment_time where DOCTOR_ID='"
+                        + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                        + "' AND APPOINTMENT_DATE= '"
+                        + dr["APPOINTMENT_DATE"]
+                        + "' AND APPOINTMENT_TIME= '"
+                        + dr["APPOINTMENT_TIME"]
+                        + "'"
+                        ;
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
 
-                string query = "SELECT  Count(*) FROM fd_rel_doctor_appointment_time where DOCTOR_ID='" 
-                    + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
-                    + "' AND APPOINTMENT_DATE= '"
-                    + dr["APPOINTMENT_DATE"]
-                    + "' AND APPOINTMENT_TIME= '"
-                    + dr["APPOINTMENT_TIME"]
-                    +"'"
-                    ;
-                MySqlCommand cmd = new MySqlCommand(query, connection);
+                    Count = int.Parse(cmd.ExecuteScalar() + "");
 
-                Count = int.Parse(cmd.ExecuteScalar() + "");
-
-                //close Connection
-                this.CloseConnection();
-
+                    return Count > 0;
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:AppExistInTable(): DB connection is not connected or broken");
+                    return Count > 0;
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:AppExistInTable(): failed\n" + e.Message);
                 return Count > 0;
-
-
             }
 
-            return false;
+
 
         }
 
@@ -381,70 +442,79 @@ namespace FocusDataBridge
         public void InsertAppointment(DataRow dr)
         {
 
-  
-            //open connection
-            if (this.OpenConnection() == true)
+            try
             {
+                //open connection
+                if (connection.State == ConnectionState.Open)
+                {
 
-                string query = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS) VALUES('"
-                + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
-                + "','"
-                + dr["APPOINTMENT_DATE"].ToString()
-                + "','"
-                + dr["APPOINTMENT_TIME"].ToString()
-                + "','"
-                + dr["ACTIVE_STATUS"].ToString()
-                + "')";
+                    string query = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS) VALUES('"
+                    + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                    + "','"
+                    + dr["APPOINTMENT_DATE"].ToString()
+                    + "','"
+                    + dr["APPOINTMENT_TIME"].ToString()
+                    + "','"
+                    + dr["ACTIVE_STATUS"].ToString()
+                    + "')";
 
-                //create command and assign the query and connection from the constructor
-                MySqlCommand cmd = new MySqlCommand(query, connection);
+                    //create command and assign the query and connection from the constructor
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
 
-                //Execute command
-                cmd.ExecuteNonQuery();
+                    //Execute command
+                    cmd.ExecuteNonQuery();
 
-                //close connection
-                this.CloseConnection();
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:InsertAppointment(): DB connection is not connected or broken");
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:InsertAppointment(): failed\n" + e.Message);
             }
         }
 
         public string GetAppActive(DataRow dr)
         {
-            
-
             string result = "";
-            //Open connection
-            if (this.OpenConnection() == true)
+
+            try
             {
-
-                string query = "SELECT ACTIVE_STATUS FROM fd_rel_doctor_appointment_time where DOCTOR_ID='"
-                + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
-                + "' AND APPOINTMENT_DATE= '"
-                    + dr["APPOINTMENT_DATE"]
-                    + "' AND APPOINTMENT_TIME= '"
-                    + dr["APPOINTMENT_TIME"]
-                    +"'";
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
-
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                if (connection.State == ConnectionState.Open)
                 {
-                    result = dataReader["ACTIVE_STATUS"].ToString();
+
+                    string query = "SELECT ACTIVE_STATUS FROM fd_rel_doctor_appointment_time where DOCTOR_ID='"
+                    + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                    + "' AND APPOINTMENT_DATE= '"
+                        + dr["APPOINTMENT_DATE"]
+                        + "' AND APPOINTMENT_TIME= '"
+                        + dr["APPOINTMENT_TIME"]
+                        + "'";
+                    //Create Command
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    //Create a data reader and Execute the command
+                    MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                    //Read the data and store them in the list
+                    while (dataReader.Read())
+                    {
+                        result = dataReader["ACTIVE_STATUS"].ToString();
+                    }
+
+                    dataReader.Close();
+                    return result;
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
-                return result;
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:GetAppActive(): DB connection is not connected or broken");
+                    return result;
+                }
             }
-            else
+            catch (Exception e)
             {
+                LogWriter.LogWrite("MYSQL:GetAppActive(): failed\n" + e.Message);
                 return result;
             }
         }
@@ -454,176 +524,210 @@ namespace FocusDataBridge
         public void UpdateAppointment(DataRow dr)
         {
 
-            //Open connection
-            if (this.OpenConnection() == true)
+            try
             {
-
-                string query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS="
-                + dr["ACTIVE_STATUS"]
-                + " WHERE DOCTOR_ID="
-                + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
-                + " AND APPOINTMENT_DATE= '"
-                    + dr["APPOINTMENT_DATE"]
-                    + "' AND APPOINTMENT_TIME= '"
-                    + dr["APPOINTMENT_TIME"]
-                    + "'";
-                //create mysql command
-                MySqlCommand cmd = new MySqlCommand();
-                //Assign the query using CommandText
-                cmd.CommandText = query;
-                //Assign the connection using Connection
-                cmd.Connection = connection;
-
-                //Execute query
-                cmd.ExecuteNonQuery();
-
-                //close connection
-                this.CloseConnection();
-            }
-        }
-        /***            fd_rel_doctor_appointment_time END         ***/
-
-
-
-
-        /***            ForClinic BEGIN         ***/
-        public DataTable GetAppointmentRequests()
-        {
-            string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_FIRSTNAME,CUSTOMER_LASTNAME,TITLE_ID,GENDER_ID,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_customer_user c on a.REQUESTING_USER_ID=c.CUSTOMER_USER_ID WHERE REQUESTING_FLAG=1";
-
-            DataTable re = new DataTable();
-            re.Clear();
-            re.Columns.Add("DOCTOR_APPOINTMENT_TIME_ID");
-            re.Columns.Add("DOCTOR_ID_IMPORT");
-            re.Columns.Add("APPOINTMENT_DATE");
-            re.Columns.Add("APPOINTMENT_TIME");
-            re.Columns.Add("CUSTOMER_USER_MAIL");
-            re.Columns.Add("CUSTOMER_FIRSTNAME");
-            re.Columns.Add("CUSTOMER_LASTNAME");
-            re.Columns.Add("TITLE_ID");
-            re.Columns.Add("GENDER_ID");
-            re.Columns.Add("CUSTOMER_BIRTHDAY");
-            re.Columns.Add("CUSTOMER_ADDR");
-            re.Columns.Add("CUSTOMER_POSTCODE");
-            re.Columns.Add("CUSTOMER_SUBURB");
-            re.Columns.Add("STATE_ID");
-            re.Columns.Add("CUSTOMER_PHONE_NO");
-            re.Columns.Add("MEDICAL_CARD_NO");
-
-            //Open connection
-            if (this.OpenConnection() == true)
-            {
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
-
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                if (connection.State == ConnectionState.Open)
                 {
-                    DataRow _r = re.NewRow();
-                    _r["DOCTOR_APPOINTMENT_TIME_ID"] = dataReader["DOCTOR_APPOINTMENT_TIME_ID"].ToString();
-                    _r["DOCTOR_ID_IMPORT"] = dataReader["DOCTOR_ID_IMPORT"].ToString();
-                    _r["APPOINTMENT_DATE"] = dataReader["APPOINTMENT_DATE"].ToString();
-                    _r["APPOINTMENT_TIME"] = dataReader["APPOINTMENT_TIME"].ToString();
-                    _r["CUSTOMER_USER_MAIL"] = dataReader["CUSTOMER_USER_MAIL"].ToString();
-                    _r["CUSTOMER_FIRSTNAME"] = dataReader["CUSTOMER_FIRSTNAME"].ToString();
-                    _r["CUSTOMER_LASTNAME"] = dataReader["CUSTOMER_LASTNAME"].ToString();
-                    _r["TITLE_ID"] = dataReader["TITLE_ID"].ToString();
-                    _r["GENDER_ID"] = dataReader["GENDER_ID"].ToString();
-                    _r["CUSTOMER_BIRTHDAY"] = dataReader["CUSTOMER_BIRTHDAY"].ToString();
-                    _r["CUSTOMER_ADDR"] = dataReader["CUSTOMER_ADDR"].ToString();
-                    _r["CUSTOMER_POSTCODE"] = dataReader["CUSTOMER_POSTCODE"].ToString();
-                    _r["CUSTOMER_SUBURB"] = dataReader["CUSTOMER_SUBURB"].ToString();
-                    _r["STATE_ID"] = dataReader["STATE_ID"].ToString();
-                    _r["CUSTOMER_PHONE_NO"] = dataReader["CUSTOMER_PHONE_NO"].ToString();
-                    _r["MEDICAL_CARD_NO"] = dataReader["MEDICAL_CARD_NO"].ToString();
-                    re.Rows.Add(_r);
+
+                    string query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS="
+                    + dr["ACTIVE_STATUS"]
+                    + " WHERE DOCTOR_ID="
+                    + GetHuangYeDOCTOR_ID(dr["DOCTOR_ID"].ToString())
+                    + " AND APPOINTMENT_DATE= '"
+                        + dr["APPOINTMENT_DATE"]
+                        + "' AND APPOINTMENT_TIME= '"
+                        + dr["APPOINTMENT_TIME"]
+                        + "'";
+                    //create mysql command
+                    MySqlCommand cmd = new MySqlCommand();
+                    //Assign the query using CommandText
+                    cmd.CommandText = query;
+                    //Assign the connection using Connection
+                    cmd.Connection = connection;
+
+                    cmd.ExecuteNonQuery();
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
-                return re;
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:UpdateAppointment(): DB connection is not connected or broken");
+                }
             }
-            else
+            catch (Exception e)
             {
-                return re;
+                LogWriter.LogWrite("MYSQL:UpdateAppointment(): failed\n" + e.Message);
             }
         }
 
-        public void ResetAllRequestFlag()
+
+
+
+
+        //_____________________________________________________________________________________FD->BP 2s task
+        public DataTable GetAppointmentRequests(string clinicID)
         {
-            //Open connection
-            if (this.OpenConnection() == true)
+            try
             {
+                string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_FIRSTNAME,CUSTOMER_LASTNAME,TITLE_ID,GENDER_ID,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a LEFT JOIN fd_doctor b ON a.DOCTOR_ID = b.DOCTOR_ID left join fd_rel_clinic_doctor c on a.DOCTOR_ID = c.DOCTOR_ID LEFT JOIN fd_customer_user d ON a.REQUESTING_USER_ID = d.CUSTOMER_USER_ID  WHERE REQUESTING_FLAG=1 and CLINIC_USER_ID="
+                    + clinicID;
 
-                string query = "UPDATE fd_rel_doctor_appointment_time SET REQUESTING_FLAG=0,REQUESTING_USER_ID=0";
-                //create mysql command
-                MySqlCommand cmd = new MySqlCommand();
-                //Assign the query using CommandText
-                cmd.CommandText = query;
-                //Assign the connection using Connection
-                cmd.Connection = connection;
+                DataTable re = new DataTable();
+                re.Clear();
+                re.Columns.Add("DOCTOR_APPOINTMENT_TIME_ID");
+                re.Columns.Add("DOCTOR_ID_IMPORT");
+                re.Columns.Add("APPOINTMENT_DATE");
+                re.Columns.Add("APPOINTMENT_TIME");
+                re.Columns.Add("CUSTOMER_USER_MAIL");
+                re.Columns.Add("CUSTOMER_FIRSTNAME");
+                re.Columns.Add("CUSTOMER_LASTNAME");
+                re.Columns.Add("TITLE_ID");
+                re.Columns.Add("GENDER_ID");
+                re.Columns.Add("CUSTOMER_BIRTHDAY");
+                re.Columns.Add("CUSTOMER_ADDR");
+                re.Columns.Add("CUSTOMER_POSTCODE");
+                re.Columns.Add("CUSTOMER_SUBURB");
+                re.Columns.Add("STATE_ID");
+                re.Columns.Add("CUSTOMER_PHONE_NO");
+                re.Columns.Add("MEDICAL_CARD_NO");
 
-                //Execute query
-                cmd.ExecuteNonQuery();
+                //Open connection
+                if (connection.State == ConnectionState.Open)
+                {
+                    //Create Command
+                    MySqlCommand cmd = new MySqlCommand(query, connection);
+                    //Create a data reader and Execute the command
+                    MySqlDataReader dataReader = cmd.ExecuteReader();
 
-                //close connection
-                this.CloseConnection();
+                    //Read the data and store them in the list
+                    while (dataReader.Read())
+                    {
+                        DataRow _r = re.NewRow();
+                        _r["DOCTOR_APPOINTMENT_TIME_ID"] = dataReader["DOCTOR_APPOINTMENT_TIME_ID"].ToString();
+                        _r["DOCTOR_ID_IMPORT"] = dataReader["DOCTOR_ID_IMPORT"].ToString();
+                        _r["APPOINTMENT_DATE"] = dataReader["APPOINTMENT_DATE"].ToString();
+                        _r["APPOINTMENT_TIME"] = dataReader["APPOINTMENT_TIME"].ToString();
+                        _r["CUSTOMER_USER_MAIL"] = dataReader["CUSTOMER_USER_MAIL"].ToString();
+                        _r["CUSTOMER_FIRSTNAME"] = dataReader["CUSTOMER_FIRSTNAME"].ToString();
+                        _r["CUSTOMER_LASTNAME"] = dataReader["CUSTOMER_LASTNAME"].ToString();
+                        _r["TITLE_ID"] = dataReader["TITLE_ID"].ToString();
+                        _r["GENDER_ID"] = dataReader["GENDER_ID"].ToString();
+                        _r["CUSTOMER_BIRTHDAY"] = dataReader["CUSTOMER_BIRTHDAY"].ToString();
+                        _r["CUSTOMER_ADDR"] = dataReader["CUSTOMER_ADDR"].ToString();
+                        _r["CUSTOMER_POSTCODE"] = dataReader["CUSTOMER_POSTCODE"].ToString();
+                        _r["CUSTOMER_SUBURB"] = dataReader["CUSTOMER_SUBURB"].ToString();
+                        _r["STATE_ID"] = dataReader["STATE_ID"].ToString();
+                        _r["CUSTOMER_PHONE_NO"] = dataReader["CUSTOMER_PHONE_NO"].ToString();
+                        _r["MEDICAL_CARD_NO"] = dataReader["MEDICAL_CARD_NO"].ToString();
+                        re.Rows.Add(_r);
+                    }
+
+
+                    dataReader.Close();
+
+                    return re;
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:GetAppointmentRequests(): DB connection is not connected or broken");
+                    return null;
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:GetAppointmentRequests(): failed\n" + e.Message);
+                return null;
+            }
+
+        }
+
+        public void ResetAllRequestFlag(string clinicID)
+        {
+            try
+            {
+                if (connection.State == ConnectionState.Open)
+                {
+                    string query = "SET SQL_SAFE_UPDATES = 0; UPDATE fd_rel_doctor_appointment_time a left JOIN `fd_rel_clinic_doctor` b ON a.`DOCTOR_ID` = b.`DOCTOR_ID` SET a.REQUESTING_FLAG = 0,a.REQUESTING_USER_ID = 0 WHERE b.`CLINIC_USER_ID` = " +
+                        clinicID;
+
+                    MySqlCommand cmd = new MySqlCommand();
+
+                    cmd.CommandText = query;
+                    cmd.Connection = connection;
+                    cmd.ExecuteNonQuery();
+
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:ResetAllRequestFlag(): DB connection is not connected or broken");
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:ResetAllRequestFlag(): failed\n" + e.Message);
             }
         }
 
         public void SetSuccessfulTo2(string id)//2 means ocupied, failed
         {
-            //Open connection
-            if (this.OpenConnection() == true)
+            try
             {
-                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=2 where DOCTOR_APPOINTMENT_TIME_ID="+id;
-                //create mysql command
-                MySqlCommand cmd = new MySqlCommand();
-                //Assign the query using CommandText
-                cmd.CommandText = query;
-                //Assign the connection using Connection
-                cmd.Connection = connection;
+                //Open connection
+                if (connection.State == ConnectionState.Open)
+                {
+                    string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=2 where DOCTOR_APPOINTMENT_TIME_ID=" + id;
+                    //create mysql command
+                    MySqlCommand cmd = new MySqlCommand();
+                    //Assign the query using CommandText
+                    cmd.CommandText = query;
+                    //Assign the connection using Connection
+                    cmd.Connection = connection;
 
-                //Execute query
-                cmd.ExecuteNonQuery();
+                    //Execute query
+                    cmd.ExecuteNonQuery();
 
-                //close connection
-                this.CloseConnection();
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:SetSuccessfulTo2(): DB connection is not connected or broken");
+                }
             }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:SetSuccessfulTo2(): failed\n" + e.Message);
+            }
+
         }
 
         public void SetSuccessfulTo1(string id)//1 means successful
         {
-            //Open connection
-            if (this.OpenConnection() == true)
+            try
             {
-                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=1 where DOCTOR_APPOINTMENT_TIME_ID=" + id;
-                //create mysql command
-                MySqlCommand cmd = new MySqlCommand();
-                //Assign the query using CommandText
-                cmd.CommandText = query;
-                //Assign the connection using Connection
-                cmd.Connection = connection;
+                //Open connection
+                if (connection.State == ConnectionState.Open)
+                {
+                    string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=1 where DOCTOR_APPOINTMENT_TIME_ID=" + id;
+                    //create mysql command
+                    MySqlCommand cmd = new MySqlCommand();
+                    //Assign the query using CommandText
+                    cmd.CommandText = query;
+                    //Assign the connection using Connection
+                    cmd.Connection = connection;
 
-                //Execute query
-                cmd.ExecuteNonQuery();
-
-                //close connection
-                this.CloseConnection();
+                    //Execute query
+                    cmd.ExecuteNonQuery();
+                }
+                else
+                {
+                    LogWriter.LogWrite("MYSQL:SetSuccessfulTo1(): DB connection is not connected or broken");
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogWrite("MYSQL:SetSuccessfulTo1(): failed\n" + e.Message);
             }
         }
 
-        /***            ForClinic END         ***/
 
-
-        /***            DEMO BEGIN         ***/
+        //_____________________________________________________________________________________________________________DEMO LIBs
         //Update statement
         public void Update()
         {
@@ -752,7 +856,7 @@ namespace FocusDataBridge
                 psi.FileName = "mysqldump";
                 psi.RedirectStandardInput = false;
                 psi.RedirectStandardOutput = true;
-                psi.Arguments = string.Format(@"-u{0} -p{1} -h{2} {3}", uid, password, server, database);
+                psi.Arguments = string.Format(@"-u{0} -p{1} -h{2} {3}", FOCUSDATA_DATABASE_USER, FOCUSDATA_DATABASE_PASS, FOCUSDATA_DATABASE_HOST, FOCUSDATA_DATABASE_NAME);
                 psi.UseShellExecute = false;
 
                 Process process = Process.Start(psi);
@@ -766,7 +870,7 @@ namespace FocusDataBridge
             }
             catch (IOException ex)
             {
-                Console.WriteLine("Error , unable to backup!");
+                Console.WriteLine("Error , unable to backup!"+ex.Message);
             }
         }
 
@@ -787,7 +891,7 @@ namespace FocusDataBridge
                 psi.FileName = "mysql";
                 psi.RedirectStandardInput = true;
                 psi.RedirectStandardOutput = false;
-                psi.Arguments = string.Format(@"-u{0} -p{1} -h{2} {3}", uid, password, server, database);
+                psi.Arguments = string.Format(@"-u{0} -p{1} -h{2} {3}", FOCUSDATA_DATABASE_USER, FOCUSDATA_DATABASE_PASS, FOCUSDATA_DATABASE_HOST, FOCUSDATA_DATABASE_NAME);
                 psi.UseShellExecute = false;
 
                 
@@ -799,7 +903,7 @@ namespace FocusDataBridge
             }
             catch (IOException ex)
             {
-                Console.WriteLine("Error , unable to Restore!");
+                Console.WriteLine("Error , unable to Restore!"+ex.Message);
             }
         }
         /***            DEMO END         ***/

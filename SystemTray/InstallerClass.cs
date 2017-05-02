@@ -38,10 +38,12 @@ namespace SystemTray
         {
             try
             {
-                Directory.SetCurrentDirectory(Path.GetDirectoryName
-                (Assembly.GetExecutingAssembly().Location));
-                Process.Start(Path.GetDirectoryName(
-                  Assembly.GetExecutingAssembly().Location) + "\\SystemTray.exe");
+                //Alex 17.05.01
+
+                //Directory.SetCurrentDirectory(Path.GetDirectoryName
+                //(Assembly.GetExecutingAssembly().Location));
+                //Process.Start(Path.GetDirectoryName(
+                //  Assembly.GetExecutingAssembly().Location) + "\\SystemTray.exe");
             }
             catch
             {

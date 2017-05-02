@@ -15,34 +15,15 @@ namespace SystemTray
     public partial class LogForm : Form
     {
 
-        private String LogMessage="";
-
         public LogForm()
         {
             InitializeComponent();
             LogTextBox.Dock = DockStyle.Fill;
-
-            //var watch = new FileSystemWatcher();
-            //watch.Path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            //watch.Filter = "log.txt";
-            //watch.NotifyFilter = NotifyFilters.LastWrite; //more options
-            //watch.Changed += new FileSystemEventHandler(OnChanged);
-            //watch.EnableRaisingEvents = true;
-
-
-
-
         }
-        //private void OnChanged(object source, FileSystemEventArgs e)
-        //{
+  
 
-        //    LogMessage = File.ReadAllText(e.FullPath, Encoding.UTF8);
-            
-        //}
-
-        public void SetLog()
+        public void SetLog(string LogMessage)
         {
-            this.LogTextBox.Clear();
             this.LogTextBox.AppendText(LogMessage);
         }
 

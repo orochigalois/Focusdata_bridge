@@ -6,6 +6,9 @@ using System.Windows.Forms;
 using System.ServiceProcess;
 using System.IO;
 using System.Reflection;
+using System.ServiceModel;
+using LogInterfaces;
+
 
 namespace SystemTray
 {
@@ -16,7 +19,7 @@ namespace SystemTray
         private System.ComponentModel.IContainer components;
 
 
-        private LogForm logForm = new LogForm();
+        static public LogForm logForm = new LogForm();
 
         private Icon mDirIcon = new Icon("focusdata.ico");
         MenuItem[] mnuItems = new MenuItem[7];
@@ -24,6 +27,13 @@ namespace SystemTray
         {
 
             InitializeComponent();
+
+            var host = new ServiceHost(typeof(TestService),
+                       new Uri("net.pipe://localhost"));
+
+            host.AddServiceEndpoint(typeof(ITestService),
+                                    new NetNamedPipeBinding(), "Test");
+            host.Open();
 
 
             //keep the form hidden
