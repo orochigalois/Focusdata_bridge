@@ -426,6 +426,46 @@ namespace FocusDataBridge
             }
         }
 
+
+        public DataTable GetDoctorDict(string clinicID)
+        {
+            DataTable dtDoctorDict = new DataTable();
+            dtDoctorDict.Clear();
+            dtDoctorDict.Columns.Add("DOCTOR_ID");
+            dtDoctorDict.Columns.Add("DOCTOR_ID_IMPORT");
+            string query = "SELECT a.DOCTOR_ID,a.DOCTOR_ID_IMPORT FROM fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID where b.CLINIC_USER_ID=" + clinicID;
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
+                {
+                    connection.Open();
+                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    {
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader != null)
+                            {
+                                while (reader.Read())
+                                {
+                                    DataRow _r = dtDoctorDict.NewRow();
+                                    _r["DOCTOR_ID"] = reader["DOCTOR_ID"].ToString();
+                                    _r["DOCTOR_ID_IMPORT"] = reader["DOCTOR_ID_IMPORT"].ToString();
+                                    dtDoctorDict.Rows.Add(_r);
+                                }
+                            }
+                        }
+                    }
+                }
+             
+                return dtDoctorDict;
+            }
+            catch (Exception e)
+            {
+                log.Write("MYSQL:GetDoctorDict(): failed\n" + e.Message);
+                return null;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>

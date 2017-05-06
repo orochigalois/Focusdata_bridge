@@ -132,6 +132,18 @@ namespace FocusDataBridge
             }
         }
 
+
+        private string GetDoctorID(string user_id, DataTable dict)
+        {
+            foreach (DataRow row in dict.Rows)
+            {
+                if(row["DOCTOR_ID_IMPORT"].ToString().Equals(user_id))
+                {
+                    return row["DOCTOR_ID"].ToString();
+                }
+            }
+            return null;
+        }
         private void Task5s()
         {
             CancellationToken cancellation = cts5s.Token;
@@ -171,7 +183,10 @@ namespace FocusDataBridge
 
                         foreach (DataRow rowBP in dtDoctors_BP.Rows)
                         {
-
+                            if (cancellation.IsCancellationRequested)
+                            {
+                                return;
+                            }
                             string surName = rowBP["surName"].ToString();
                             string firstName = rowBP["firstName"].ToString();
                             string fullName = firstName + ' ' + surName;
@@ -203,7 +218,10 @@ namespace FocusDataBridge
                   
                         }
 
-
+                        if (cancellation.IsCancellationRequested)
+                        {
+                            return;
+                        }
                         //2. SQL.Sessions -> MYSQL.fd_rel_doctor_appointment_time
 
                         DataTable dtSessions = bpsqlConnect.GetAllSessions();
@@ -216,14 +234,29 @@ namespace FocusDataBridge
          
                         DataTable dtAppointments_MYSQL = mysqlConnect.GetAllAppointments(clinicID);
 
+                        DataTable dtDoctorDict_MYSQL = mysqlConnect.GetDoctorDict(clinicID);
+                       
+
+                        if (cancellation.IsCancellationRequested)
+                        {
+                            return;
+                        }
+
+
                         int a = 0, b = 0;
                         int length_A = dtAppointments_BP.Rows.Count;
                         int length_B = dtAppointments_MYSQL.Rows.Count;
 
+                        int insertCount = 0;
+                        bool someRemain=false;
                         string insertAppQuery = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS,CREATE_USER,CREATE_DATE) VALUES";
-                        bool need_to_insert = false;
+                       
                         while (a<length_A && b<length_B)
                         {
+                            if (cancellation.IsCancellationRequested)
+                            {
+                                return;
+                            }
                             DataRow bp = dtAppointments_BP.Rows[a];
                             DataRow mysql = dtAppointments_MYSQL.Rows[b];
                             Relation result = Compare(bp, mysql);
@@ -239,102 +272,87 @@ namespace FocusDataBridge
                             }
                             else if(result == Relation.LessThan)
                             {
-                                string DOCTOR_ID = mysqlConnect.GetDoctorID(bp["USERID"].ToString(), clinicID);
+                                string DOCTOR_ID = GetDoctorID(bp["USERID"].ToString(), dtDoctorDict_MYSQL);
+                                if (DOCTOR_ID == null)
+                                    continue;
                                 insertAppQuery += "(" + DOCTOR_ID +
                                     ",'" + bp["APPOINTMENTDATE"].ToString() + "', '"
                                     + bp["APPOINTMENTTIME"].ToString() + "', '" + bp["ACTIVE"].ToString()
                                     + "','" + CLINIC_USER_MAIL + "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "'),";
-                                need_to_insert = true;
+                                insertCount++;
+                                //log.Write("Prepare " + insertCount.ToString() + " appointments OK\n");
+
+                                if (insertCount==1000)
+                                {
+                                    insertAppQuery = insertAppQuery.TrimEnd(',');
+                                    mysqlConnect.InsertAppointment(insertAppQuery);
+                                    log.Write("Sync 1000 appointments complete\n");
+
+                                    insertAppQuery = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS,CREATE_USER,CREATE_DATE) VALUES";
+                                    insertCount = 0;
+                                    someRemain = false;
+                                }
+                                else
+                                {
+                                    someRemain = true;
+                                }
+
+
+                              
                                 a++;
                             }
                         }
 
                         while(a < length_A)
                         {
+
+                            if (cancellation.IsCancellationRequested)
+                            {
+                                return;
+                            }
+
                             DataRow bp = dtAppointments_BP.Rows[a];
-                            string DOCTOR_ID = mysqlConnect.GetDoctorID(bp["USERID"].ToString(), clinicID);
+                            string DOCTOR_ID = GetDoctorID(bp["USERID"].ToString(), dtDoctorDict_MYSQL);
+                            if (DOCTOR_ID == null)
+                                continue;
                             insertAppQuery += "(" + DOCTOR_ID +
                                 ",'" + bp["APPOINTMENTDATE"].ToString() + "', '"
                                 + bp["APPOINTMENTTIME"].ToString() + "', '" + bp["ACTIVE"].ToString()
                                 + "','" + CLINIC_USER_MAIL + "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "'),";
-                            need_to_insert = true;
+                           
+
+                            insertCount++;
+                            //log.Write("Prepare "+ insertCount.ToString() + " appointments OK\n");
+
+                            if (insertCount == 1000)
+                            {
+                                insertAppQuery = insertAppQuery.TrimEnd(',');
+                                mysqlConnect.InsertAppointment(insertAppQuery);
+                                log.Write("Sync 1000 appointments complete\n");
+
+                                insertAppQuery = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS,CREATE_USER,CREATE_DATE) VALUES";
+                                insertCount = 0;
+                                someRemain = false;
+                            }
+                            else
+                            {
+                                someRemain = true;
+                            }
+                            
+
                             a++;
+
+
                         }
 
-                        if (need_to_insert)
+                        if (someRemain)
                         {
                             insertAppQuery = insertAppQuery.TrimEnd(',');
                             mysqlConnect.InsertAppointment(insertAppQuery);
-                            log.Write("Sync app complete\n");
+                            log.Write("Sync " + insertCount.ToString() + "appointments complete\n");
                         }
 
-
-                        ////////////////////////////////
-                        //string insertAppQuery = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS,CREATE_USER,CREATE_DATE) VALUES";
-                        //bool need_to_insert = false;
-                        //foreach (DataRow rowBP in dtAppointments_BP.Rows)
-                        //{
-
-
-                        //    string USER_ID = rowBP["USERID"].ToString();
-                        //    string APPOINTMENT_DATE = rowBP["APPOINTMENTDATE"].ToString();
-                        //    string APPOINTMENT_TIME = rowBP["APPOINTMENTTIME"].ToString();
-                        //    string ACTIVE_STATUS = rowBP["ACTIVE"].ToString();
-
-
-                        //    bool found = false;
-
-                        //    foreach (DataRow rowMYSQL in dtAppointments_MYSQL.Rows)
-                        //    {
-
-
-                        //        if (USER_ID.Equals(rowMYSQL["USER_ID"].ToString())
-                        //            && APPOINTMENT_DATE.Equals(rowMYSQL["APPOINTMENT_DATE"].ToString())
-                        //            && APPOINTMENT_TIME.Equals(rowMYSQL["APPOINTMENT_TIME"].ToString())
-                        //            )
-                        //        {
-                        //            found = true;
-
-
-                        //            if (!ACTIVE_STATUS.Equals(rowMYSQL["ACTIVE_STATUS"].ToString()))
-                        //            {
-                        //                //update
-                        //                mysqlConnect.UpdateAppointment(rowMYSQL, clinicID, CLINIC_USER_MAIL);
-                        //            }
-                        //            continue;
-
-                        //        }
-                        //    }
-
-                        //    if (!found)
-                        //    {
-                        //        string DOCTOR_ID = mysqlConnect.GetDoctorID(USER_ID, clinicID);
-                        //        insertAppQuery += "(" + DOCTOR_ID +
-                        //            ",'" + APPOINTMENT_DATE + "', '"
-                        //            + APPOINTMENT_TIME + "', '" + ACTIVE_STATUS
-                        //            + "','" + CLINIC_USER_MAIL + "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "'),";
-                        //        need_to_insert = true;
-
-
-                        //    }
-
-                        //}
-
-                        //if (need_to_insert)
-                        //{
-                        //    insertAppQuery = insertAppQuery.TrimEnd(',');
-                        //    mysqlConnect.InsertAppointment(insertAppQuery);
-                        //    log.Write("Sync app complete\n");
-                        //}
-
-
-
-
-
-
-
-
-
+                        
 
                     }
                     catch (Exception e)
