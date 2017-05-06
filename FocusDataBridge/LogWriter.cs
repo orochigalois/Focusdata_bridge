@@ -22,20 +22,22 @@ namespace FocusDataBridge
         {
             try
             {
+                connection = Constant.CLOSED;
+
                 var callback = new TestCallback();
                 var context = new InstanceContext(callback);
                 pipeFactory =
                      new DuplexChannelFactory<ITestService>(context,
                      new NetNamedPipeBinding(),
                      new EndpointAddress("net.pipe://localhost/Test"));
-                WCFservice = pipeFactory.CreateChannel();
-                connection = Constant.CLOSED;
+    
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
-
+ 
         }
         public int getConnectionState()
         {

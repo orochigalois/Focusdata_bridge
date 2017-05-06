@@ -18,7 +18,7 @@ namespace SystemTray
         public LogForm()
         {
             InitializeComponent();
-            LogTextBox.Dock = DockStyle.Fill;
+            //LogTextBox.Dock = DockStyle.Fill;
         }
   
 
@@ -35,6 +35,16 @@ namespace SystemTray
                 e.Cancel = true;
                 Hide();
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Hide();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            this.LogTextBox.Clear();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Drawing;
 using System.Resources;
 using System.ComponentModel;
@@ -21,8 +22,10 @@ namespace SystemTray
 
         static public LogForm logForm = new LogForm();
 
+        public ConfigForm configForm = new ConfigForm();
+
         private Icon mDirIcon = new Icon("focusdata.ico");
-        MenuItem[] mnuItems = new MenuItem[7];
+        MenuItem[] mnuItems = new MenuItem[8];
         public FocusdataSystemTray()
         {
 
@@ -42,7 +45,9 @@ namespace SystemTray
 
             InitializeServiceController();
 
+            //Configuration config = ConfigurationManager.OpenExeConfiguration("C:\\FocusDataBridge.exe");
 
+            //Console.WriteLine(config.AppSettings.["FOCUSDATA_DATABASE_HOST"]);
 
         }
 
@@ -137,10 +142,13 @@ namespace SystemTray
                 if (AvailableService.ServiceName == "Focusdata Service")
                 {
                     this.WSController.ServiceName = "Focusdata Service";
+
+#if DEBUG
+#else
                     //hold on until Focusdata Service is launched successfully
                     WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
                     SetButtonStatus();
-
+#endif
 
                     return;
                 }
@@ -165,15 +173,16 @@ namespace SystemTray
             //create the menu items array
             mnuItems[0] = new MenuItem("Log...", new EventHandler(this.Log_Click));
             mnuItems[0].DefaultItem = true;
-            mnuItems[1] = new MenuItem("-");
-            mnuItems[2] = new MenuItem("Start service", new EventHandler(this.Start_Click));
-            mnuItems[2].Enabled = false;
-            mnuItems[3] = new MenuItem("Stop service", new EventHandler(this.Stop_Click));
+            mnuItems[1] = new MenuItem("Config...", new EventHandler(this.Config_Click));
+            mnuItems[2] = new MenuItem("-");
+            mnuItems[3] = new MenuItem("Start service", new EventHandler(this.Start_Click));
             mnuItems[3].Enabled = false;
-            mnuItems[4] = new MenuItem("Pause service", new EventHandler(this.Pause_Click));
+            mnuItems[4] = new MenuItem("Stop service", new EventHandler(this.Stop_Click));
             mnuItems[4].Enabled = false;
-            mnuItems[5] = new MenuItem("-");
-            mnuItems[6] = new MenuItem("Exit", new EventHandler(this.ExitControlForm));
+            mnuItems[5] = new MenuItem("Pause service", new EventHandler(this.Pause_Click));
+            mnuItems[5].Enabled = false;
+            mnuItems[6] = new MenuItem("-");
+            mnuItems[7] = new MenuItem("Exit", new EventHandler(this.ExitControlForm));
 
             //add the menu items to the context menu of the NotifyIcon
             ContextMenu notifyIconMenu = new ContextMenu(mnuItems);
@@ -196,149 +205,171 @@ namespace SystemTray
                 if (WSController.CanPauseAndContinue == true)
                 {
 
-                    mnuItems[4].Enabled = true;
+                    mnuItems[5].Enabled = true;
                 }
                 else
                 {
 
-                    mnuItems[4].Enabled = false;
+                    mnuItems[5].Enabled = false;
                 }
 
-                mnuItems[3].Enabled = true;
+                mnuItems[4].Enabled = true;
 
-                mnuItems[2].Enabled = false;
+                mnuItems[3].Enabled = false;
             }
             else if (strServerStatus == "Paused")
             {
-                mnuItems[2].Enabled = true;
-                mnuItems[4].Enabled = false;
                 mnuItems[3].Enabled = true;
+                mnuItems[5].Enabled = false;
+                mnuItems[4].Enabled = true;
             }
             else if (strServerStatus == "Stopped")
             {
-                mnuItems[2].Enabled = true;
+                mnuItems[3].Enabled = true;
+                mnuItems[5].Enabled = false;
                 mnuItems[4].Enabled = false;
-                mnuItems[3].Enabled = false;
             }
 
         }
 
         private void Log_Click(object sender, System.EventArgs e)
         {
-
-            
-            //logForm.SetLog();
             logForm.Show();
-
         }
 
+        private void Config_Click(object sender, System.EventArgs e)
+        {
+            configForm.Show();
+        }
 
         private void Start_Click(object sender, System.EventArgs e)
         {
-            //check the status of the service
-            if (WSController.Status.ToString() == "Paused")
+            try
             {
-                WSController.Continue();
-            }
-            else if (WSController.Status.ToString() == "Stopped")
-            {
-
-                //get an array of services this service depends upon, loop through 
-                //the array and prompt the user to start all required services.
-                ServiceController[] ParentServices = WSController.ServicesDependedOn;
-
-                //if the length of the array is greater than or equal to 1.
-                if (ParentServices.Length >= 1)
+                //check the status of the service
+                if (WSController.Status.ToString() == "Paused")
                 {
-                    foreach (ServiceController ParentService in ParentServices)
+                    WSController.Continue();
+                }
+                else if (WSController.Status.ToString() == "Stopped")
+                {
+
+                    //get an array of services this service depends upon, loop through 
+                    //the array and prompt the user to start all required services.
+                    ServiceController[] ParentServices = WSController.ServicesDependedOn;
+
+                    //if the length of the array is greater than or equal to 1.
+                    if (ParentServices.Length >= 1)
                     {
-                        //make sure the parent service is running or at least paused.
-                        if (ParentService.Status.ToString() != "Running" || ParentService.Status.ToString() != "Paused")
+                        foreach (ServiceController ParentService in ParentServices)
                         {
-
-                            if (MessageBox.Show("This service is required. Would you like to also start this service?\n" + ParentService.DisplayName, "Required Service", MessageBoxButtons.YesNo).ToString() == "Yes")
+                            //make sure the parent service is running or at least paused.
+                            if (ParentService.Status.ToString() != "Running" || ParentService.Status.ToString() != "Paused")
                             {
-                                //if the user chooses to start the service
 
-                                ParentService.Start();
-                                ParentService.WaitForStatus(ServiceControllerStatus.Running);
-                            }
-                            else
-                            {
-                                //otherwise just return.
-                                return;
+                                if (MessageBox.Show("This service is required. Would you like to also start this service?\n" + ParentService.DisplayName, "Required Service", MessageBoxButtons.YesNo).ToString() == "Yes")
+                                {
+                                    //if the user chooses to start the service
+
+                                    ParentService.Start();
+                                    ParentService.WaitForStatus(ServiceControllerStatus.Running);
+                                }
+                                else
+                                {
+                                    //otherwise just return.
+                                    return;
+                                }
                             }
                         }
                     }
+
+                    WSController.Start();
                 }
 
-                WSController.Start();
+                WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
+                SetButtonStatus();
             }
-
-            WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
-            SetButtonStatus();
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         private void Stop_Click(object sender, System.EventArgs e)
         {
-            //check to see if the service can be stopped.
-            if (WSController.CanStop == true)
+
+            try
             {
-
-                //get an array of dependent services, loop through the array and 
-                //prompt the user to stop all dependent services.
-                ServiceController[] DependentServices = WSController.DependentServices;
-
-                //if the length of the array is greater than or equal to 1.
-                if (DependentServices.Length >= 1)
+                //check to see if the service can be stopped.
+                if (WSController.CanStop == true)
                 {
-                    foreach (ServiceController DependentService in DependentServices)
+
+                    //get an array of dependent services, loop through the array and 
+                    //prompt the user to stop all dependent services.
+                    ServiceController[] DependentServices = WSController.DependentServices;
+
+                    //if the length of the array is greater than or equal to 1.
+                    if (DependentServices.Length >= 1)
                     {
-                        //make sure the dependent service is not already stopped.
-                        if (DependentService.Status.ToString() != "Stopped")
+                        foreach (ServiceController DependentService in DependentServices)
                         {
-                            if (MessageBox.Show("Would you like to also stop this dependent service?\n" + DependentService.DisplayName, "Dependent Service", MessageBoxButtons.YesNo).ToString() == "Yes")
+                            //make sure the dependent service is not already stopped.
+                            if (DependentService.Status.ToString() != "Stopped")
                             {
-                                // not checking at this point whether the dependent service can be stopped.
-                                // developer may want to include this check to avoid exception.
-                                DependentService.Stop();
-                                DependentService.WaitForStatus(ServiceControllerStatus.Stopped);
-                            }
-                            else
-                            {
-                                return;
+                                if (MessageBox.Show("Would you like to also stop this dependent service?\n" + DependentService.DisplayName, "Dependent Service", MessageBoxButtons.YesNo).ToString() == "Yes")
+                                {
+                                    // not checking at this point whether the dependent service can be stopped.
+                                    // developer may want to include this check to avoid exception.
+                                    DependentService.Stop();
+                                    DependentService.WaitForStatus(ServiceControllerStatus.Stopped);
+                                }
+                                else
+                                {
+                                    return;
+                                }
                             }
                         }
                     }
-                }
 
-                //check the status of the service
-                if (WSController.Status.ToString() == "Running" || WSController.Status.ToString() == "Paused")
-                {
-                    WSController.Stop();
+                    //check the status of the service
+                    if (WSController.Status.ToString() == "Running" || WSController.Status.ToString() == "Paused")
+                    {
+                        WSController.Stop();
+                    }
+                    WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Stopped);
+                    SetButtonStatus();
                 }
-                WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Stopped);
-                SetButtonStatus();
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
         }
 
         private void Pause_Click(object sender, System.EventArgs e)
         {
-            //check to see if the service can be paused and continue
-            if (WSController.CanPauseAndContinue == true)
+            try
             {
-                //check the status of the service
-                if (WSController.Status.ToString() == "Running")
+                //check to see if the service can be paused and continue
+                if (WSController.CanPauseAndContinue == true)
                 {
-                    WSController.Pause();
-                }
+                    //check the status of the service
+                    if (WSController.Status.ToString() == "Running")
+                    {
+                        WSController.Pause();
+                    }
 
-                WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Paused);
-                SetButtonStatus();
+                    WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Paused);
+                    SetButtonStatus();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
 
         }
-
 
     }
 }
