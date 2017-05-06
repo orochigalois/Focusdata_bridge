@@ -38,7 +38,11 @@ namespace FocusDataBridge
         }
 
 
-
+        /// <summary>
+        /// +++++++++++++++++++++++++++++++++++
+        /// </summary>
+        /// <param name="clinicID"></param>
+        /// <returns></returns>
         public DataTable GetAllDoctors(string clinicID)
         {
             try
@@ -65,7 +69,7 @@ namespace FocusDataBridge
                                 while (reader.Read())
                                 {
                                     fullName = (string)reader["DOCTOR_NAME"];
-                                    userID = (int)reader["UserID"];
+                                    userID = (int)reader["DOCTOR_ID_IMPORT"];
 
                                     DataRow _r = dtDoctors.NewRow();
                                     _r["fullName"] = fullName;
@@ -85,6 +89,57 @@ namespace FocusDataBridge
                 return null;
             }
 
+        }
+
+        public DataTable GetAllAppointments(string clinicID)
+        {
+            try
+            {
+                DataTable dtAppointments = new DataTable();
+                dtAppointments.Clear();
+                dtAppointments.Columns.Add("DOCTOR_ID");
+                dtAppointments.Columns.Add("USER_ID");
+                dtAppointments.Columns.Add("APPOINTMENT_DATE");
+                dtAppointments.Columns.Add("APPOINTMENT_TIME");
+                dtAppointments.Columns.Add("ACTIVE_STATUS");
+
+
+                string query = "SELECT a.DOCTOR_ID,b.DOCTOR_ID_IMPORT,a.APPOINTMENT_DATE,a.APPOINTMENT_TIME,a.ACTIVE_STATUS FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join `fd_rel_clinic_doctor` c on a.DOCTOR_ID=c.DOCTOR_ID where c.CLINIC_USER_ID="
+                    + clinicID+ " order by CAST(b.DOCTOR_ID_IMPORT AS CHAR(50)),a.APPOINTMENT_DATE,a.APPOINTMENT_TIME";
+
+
+                using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
+                {
+                    connection.Open();
+                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    {
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader != null)
+                            {
+                                while (reader.Read())
+                                {
+                                    DataRow _r = dtAppointments.NewRow();
+                                    _r["DOCTOR_ID"] = reader["DOCTOR_ID"].ToString();
+                                    _r["USER_ID"] = reader["DOCTOR_ID_IMPORT"].ToString();
+                                    var dateTime = DateTime.Parse(reader["APPOINTMENT_DATE"].ToString());
+                                    _r["APPOINTMENT_DATE"] = dateTime.ToString("yyyy-MM-dd");
+                                    _r["APPOINTMENT_TIME"] = reader["APPOINTMENT_TIME"].ToString();
+                                    _r["ACTIVE_STATUS"] = reader["ACTIVE_STATUS"].ToString();
+                                    dtAppointments.Rows.Add(_r);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return dtAppointments;
+            }
+            catch (Exception e)
+            {
+                log.Write("MYSQL:GetAllAppointments(): failed\n" + e.Message);
+                return null;
+            }
         }
 
 
@@ -236,12 +291,12 @@ namespace FocusDataBridge
         /// <param name="firstName"></param>
         /// <param name="userID"></param>
         /// <param name="clinicID"></param>
-        public void UpdateDoctor(string surName, string firstName, string userID, string clinicID, string update_user)
+        public void UpdateDoctor(string fullName, string userID, string clinicID, string update_user)
         {
 
             try
             {
-                string query = "UPDATE fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID SET a.ACTIVE_STATUS='0', a.DOCTOR_NAME='" + firstName + " " + surName + "',a.UPDATE_USER='"+ update_user + "',a.UPDATE_DATE='"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "' WHERE b.CLINIC_USER_ID=" + clinicID + " and a.DOCTOR_ID_IMPORT=" + userID;
+                string query = "UPDATE fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID SET a.ACTIVE_STATUS='0', a.DOCTOR_NAME='" + fullName + "',a.UPDATE_USER='"+ update_user + "',a.UPDATE_DATE='"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "' WHERE b.CLINIC_USER_ID=" + clinicID + " and a.DOCTOR_ID_IMPORT=" + userID;
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
@@ -266,13 +321,12 @@ namespace FocusDataBridge
         /// <param name="firstName"></param>
         /// <param name="userID"></param>
         /// <returns></returns>
-        public string InsertDoctor(string surName, string firstName, string userID, string create_user)
+        public string InsertDoctor(string fullName, string userID, string create_user)
         {
             string result = "";
             try
             {
-                string name = firstName + " " + surName;
-                string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT,CREATE_USER,CREATE_DATE) VALUES('" + name + "', '0','" + userID + "','"+ create_user + "','"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
+                string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT,CREATE_USER,CREATE_DATE) VALUES('" + fullName + "', '0','" + userID + "','"+ create_user + "','"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
                     connection.Open();
@@ -471,12 +525,11 @@ namespace FocusDataBridge
         {
             try
             {
-                string doctorID = GetDoctorID(dr["DOCTOR_ID"].ToString(), clinicID);
-
+               
                 string query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS="
                     + dr["ACTIVE_STATUS"]
-                    + ",UPDATE_USER="+ update_user + ",UPDATE_DATE="+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ " WHERE DOCTOR_ID="
-                    + doctorID
+                    + ",UPDATE_USER='"+ update_user + "',UPDATE_DATE='"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "' WHERE DOCTOR_ID="
+                    + dr["DOCTOR_ID"]
                     + " AND APPOINTMENT_DATE= '"
                         + dr["APPOINTMENT_DATE"]
                         + "' AND APPOINTMENT_TIME= '"
@@ -508,21 +561,10 @@ namespace FocusDataBridge
         /// <param name="dr"></param>
         /// <param name="clinicID"></param>
         /// <param name="create_user"></param>
-        public void InsertAppointment(DataRow dr, string clinicID, string create_user)
+        public void InsertAppointment(string query)
         {
             try
             {
-                string doctorID = GetDoctorID(dr["DOCTOR_ID"].ToString(), clinicID);
-                string query = "INSERT INTO fd_rel_doctor_appointment_time (DOCTOR_ID, APPOINTMENT_DATE, APPOINTMENT_TIME, ACTIVE_STATUS,CREATE_USER,CREATE_DATE) VALUES('"
-                    + doctorID
-                    + "','"
-                    + dr["APPOINTMENT_DATE"].ToString()
-                    + "','"
-                    + dr["APPOINTMENT_TIME"].ToString()
-                    + "','"
-                    + dr["ACTIVE_STATUS"].ToString()
-                    + "','"+ create_user + "','"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "')";
-
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
                     connection.Open();
@@ -531,8 +573,6 @@ namespace FocusDataBridge
                         cmd.ExecuteNonQuery();
                     }
                 }
-
-
             }
             catch (Exception e)
             {
@@ -626,11 +666,11 @@ namespace FocusDataBridge
         {
             try
             {
-                string query = "SET SQL_SAFE_UPDATES = 0; UPDATE fd_rel_doctor_appointment_time a left JOIN `fd_rel_clinic_doctor` b ON a.`DOCTOR_ID` = b.`DOCTOR_ID` SET a.REQUESTING_FLAG = 0,a.REQUESTING_USER_ID = 0,a.UPDATE_USER="
+                string query = "SET SQL_SAFE_UPDATES = 0; UPDATE fd_rel_doctor_appointment_time a left JOIN `fd_rel_clinic_doctor` b ON a.`DOCTOR_ID` = b.`DOCTOR_ID` SET a.REQUESTING_FLAG = 0,a.REQUESTING_USER_ID = 0,a.UPDATE_USER='"
                     + update_user
-                    + ",a.UPDATE_DATE="
+                    + "',a.UPDATE_DATE='"
                     + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") 
-                    + " WHERE b.`CLINIC_USER_ID` = " 
+                    + "' WHERE b.`CLINIC_USER_ID` = " 
                     + clinicID;
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
@@ -658,11 +698,11 @@ namespace FocusDataBridge
         {
             try
             {
-                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=2,UPDATE_USER="
+                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=2,UPDATE_USER='"
                     + update_user
-                    + ",UPDATE_DATE="
+                    + "',UPDATE_DATE='"
                     + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                    +" where DOCTOR_APPOINTMENT_TIME_ID=" + id;
+                    +"' where DOCTOR_APPOINTMENT_TIME_ID=" + id;
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
                     connection.Open();
@@ -689,11 +729,11 @@ namespace FocusDataBridge
         {
             try
             {
-                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=1,UPDATE_USER="
+                string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=1,UPDATE_USER='"
                     + update_user
-                    + ",UPDATE_DATE="
+                    + "',UPDATE_DATE='"
                     + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                    + " where DOCTOR_APPOINTMENT_TIME_ID=" + id;
+                    + "' where DOCTOR_APPOINTMENT_TIME_ID=" + id;
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
                     connection.Open();

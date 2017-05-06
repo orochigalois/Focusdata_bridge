@@ -115,7 +115,7 @@ namespace FocusDataBridge
                 dtSessions.Columns.Add("Weeks");
                 dtSessions.Columns.Add("CycleWeek");
                 dtSessions.Columns.Add("CycleDate");
-
+ 
                 int clinic1_sessions_UserID = 0;
                 int clinic1_sessions_LocationID = 0;
                 int clinic1_sessions_DayOfWeek = 0;
@@ -175,8 +175,10 @@ namespace FocusDataBridge
                     }
                 }
 
-
-                return dtSessions;
+                DataView dv = dtSessions.DefaultView;
+                dv.Sort = "UserID asc";
+                DataTable sortedDT = dv.ToTable();
+                return sortedDT;
             }
             catch (Exception e)
             {
@@ -186,6 +188,73 @@ namespace FocusDataBridge
 
         }
 
+        public DataTable GetDTAppointmentBooked()
+        {
+            try
+            {
+                DataTable dtAppointmentBooked = new DataTable();
+                dtAppointmentBooked.Clear();
+                dtAppointmentBooked.Columns.Add("USER_ID");
+                dtAppointmentBooked.Columns.Add("APPOINTMENT_DATE");
+                dtAppointmentBooked.Columns.Add("APPOINTMENT_TIME");
+                string query = "SELECT UserID,AppointmentDate,AppointmentTime FROM Appointments WHERE RecordStatus = 1";
+                using (SqlConnection connection = new SqlConnection(PrepareConnectionString()))
+                {
+                    connection.Open();
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader != null)
+                            {
+                                while (reader.Read())
+                                {
+                                    DataRow _r = dtAppointmentBooked.NewRow();
+                                    _r["USER_ID"] = reader["UserID"].ToString();
+                                    var dateTime = DateTime.Parse(reader["AppointmentDate"].ToString());
+                                    _r["APPOINTMENT_DATE"] = dateTime.ToString("yyyy-MM-dd");
+
+                                    int i = Convert.ToInt32(reader["AppointmentTime"].ToString());
+                                       
+                                    TimeSpan time = TimeSpan.FromSeconds(i);
+
+                                    //here backslash is must to tell that colon is
+                                    //not the part of format, it just a character that we want in output
+                                    string str = time.ToString(@"hh\:mm\:ss");
+
+                                    _r["APPOINTMENT_TIME"] = str;
+                                    dtAppointmentBooked.Rows.Add(_r);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return dtAppointmentBooked;
+            }
+            catch (Exception e)
+            {
+                log.Write("BPSQL:GetDTAppointmentBooked(): failed\n" + e.Message);
+                return null;
+            }
+        }
+
+
+        public bool IsAppointmentBooked(string user_id,string aptdate, string apttime, DataTable dtAppointmentsBooked)
+        {
+            bool found = false;
+            foreach (DataRow row in dtAppointmentsBooked.Rows)
+            {
+                if (row["USER_ID"].ToString().Equals(user_id)&&
+                    row["APPOINTMENT_DATE"].ToString().Equals(aptdate)&&
+                    row["APPOINTMENT_TIME"].ToString().Equals(apttime))
+                {
+                    found = true;
+                    continue;
+                }
+            }
+            return found;
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -197,11 +266,14 @@ namespace FocusDataBridge
             {
                 DataTable dtAppointments = new DataTable();
                 dtAppointments.Clear();
-                dtAppointments.Columns.Add("DOCTOR_ID");
-                dtAppointments.Columns.Add("APPOINTMENT_DATE");
-                dtAppointments.Columns.Add("APPOINTMENT_TIME");
-                dtAppointments.Columns.Add("ACTIVE_STATUS");
+                dtAppointments.Columns.Add("USERID");
+                dtAppointments.Columns.Add("APPOINTMENTDATE");
+                dtAppointments.Columns.Add("APPOINTMENTTIME");
+                dtAppointments.Columns.Add("ACTIVE");
+  
 
+
+                DataTable dtAppointmentsBooked = GetDTAppointmentBooked();
                 foreach (DataRow row in dtSessions.Rows)
                 {
 
@@ -219,55 +291,27 @@ namespace FocusDataBridge
                         foreach (var time in myTimes)
                         {
                             DataRow _r = dtAppointments.NewRow();
-                            _r["DOCTOR_ID"] = row["UserID"];
-                            _r["APPOINTMENT_DATE"] = date.Date.ToString("yyyy-MM-dd"); ;
-                            _r["APPOINTMENT_TIME"] = time;
-
-                            using (SqlConnection connection = new SqlConnection(PrepareConnectionString()))
-                            {
-                                connection.Open();
-                                using (SqlCommand cmd = new SqlCommand("BP_IsAppointmentBooked", connection))
-                                {
-                                    cmd.CommandType = CommandType.StoredProcedure;
-                                    SqlParameter p1 = new SqlParameter("@userid", Int32.Parse(row["UserID"].ToString()));
-                                    p1.Direction = ParameterDirection.Input;
-                                    p1.DbType = DbType.Int32;
-                                    cmd.Parameters.Add(p1);
-
-                                    SqlParameter p2 = new SqlParameter("@aptdate", date.Date);
-                                    p2.Direction = ParameterDirection.Input;
-                                    p2.DbType = DbType.DateTime;
-                                    cmd.Parameters.Add(p2);
-                                    TimeSpan MySpan = TimeSpan.Parse(time);
-
-
-                                    SqlParameter p3 = new SqlParameter("@apttime", Convert.ToInt32(MySpan.TotalSeconds));
-                                    p3.Direction = ParameterDirection.Input;
-                                    p3.DbType = DbType.Int32;
-                                    cmd.Parameters.Add(p3);
-
-
-                                    var returnParameter = cmd.Parameters.Add("@ReturnVal", SqlDbType.Int);
-                                    returnParameter.Direction = ParameterDirection.ReturnValue;
-
-
-                                    cmd.ExecuteNonQuery();
-                                    int result = (int)returnParameter.Value;
-                                    if (result == 1)
-                                        _r["ACTIVE_STATUS"] = 0;
-                                    else
-                                        _r["ACTIVE_STATUS"] = 1;
-
-                                    dtAppointments.Rows.Add(_r);
-                                    
-                                }
-                            }
+                            _r["USERID"] = row["UserID"];
+                            _r["APPOINTMENTDATE"] = date.Date.ToString("yyyy-MM-dd"); ;
+                            _r["APPOINTMENTTIME"] = time;
+                            if(IsAppointmentBooked(_r["USERID"].ToString(),
+                                _r["APPOINTMENTDATE"].ToString(),
+                                _r["APPOINTMENTTIME"].ToString(),
+                                dtAppointmentsBooked))
+                                _r["ACTIVE"] = 0;
+                            else
+                                _r["ACTIVE"] = 1;
+                            dtAppointments.Rows.Add(_r);
+                            
                         }
                     }
                 }
 
-                return dtAppointments;
 
+                DataView dv = dtAppointments.DefaultView;
+                dv.Sort = "UserID,APPOINTMENTDATE,APPOINTMENTTIME asc";
+                DataTable sortedDT = dv.ToTable();
+                return sortedDT;
                
             }
             catch (Exception e)
