@@ -652,8 +652,9 @@ namespace FocusDataBridge
         /// <param name="row"></param>
         /// <param name="patientID"></param>
         /// <returns></returns>
-        public bool AddAppointment(DataRow row, int patientID)
+        public int AddAppointment(DataRow row, int patientID)
         {
+            int appID = -1;
             try
             {
                 using (SqlConnection connection = new SqlConnection(PrepareConnectionString()))
@@ -695,18 +696,61 @@ namespace FocusDataBridge
                         returnQ.Direction = ParameterDirection.ReturnValue;
 
                         cmd.ExecuteNonQuery();
+                        appID = (int)returnQ.Value;
+
+                        
+
                     }
                 }
 
-                return true;
+                return appID;
             }
             catch (Exception e)
             {
                 log.Write("BPSQL:AddAppointment(): failed\n" + e.Message);
-                return false;
+                return appID;
             }
 
         }
+
+
+
+        public void CancelAppointment(string appID)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(PrepareConnectionString()))
+                {
+                    connection.Open();
+                    using (SqlCommand cmd = new SqlCommand("BP_CancelAppointment", connection))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        SqlParameter q1 = new SqlParameter("@aptid", Convert.ToInt32(appID));
+                        q1.Direction = ParameterDirection.Input;
+                        q1.DbType = DbType.Int32;
+                        cmd.Parameters.Add(q1);
+
+                        SqlParameter q2 = new SqlParameter("@loginid", 0);
+                        q2.Direction = ParameterDirection.Input;
+                        q2.DbType = DbType.Int32;
+                        cmd.Parameters.Add(q2);
+
+                       
+                        cmd.ExecuteNonQuery();
+
+                        log.Write("Cancel an appointment successfully\n");
+
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                log.Write("BPSQL:AddAppointment(): failed\n" + e.Message);
+            }
+
+        }
+
 
 
 

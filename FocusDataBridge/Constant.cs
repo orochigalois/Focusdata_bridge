@@ -64,7 +64,7 @@ namespace FocusDataBridge
             int intYear = DateTime.Now.Year;
             int intDay = DateTime.Now.Day;
 
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 90; i++)
             {
                 if (d != 0)
                 {

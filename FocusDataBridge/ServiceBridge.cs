@@ -28,14 +28,18 @@ namespace FocusDataBridge
         BPsqlConnect bpsqlConnect;
 
         /*Tasks*/
-        public const int Task5s_CYCLE = 5;
-        private CancellationTokenSource cts5s = new CancellationTokenSource();
-        private Task task5s = null;
+#if DEBUG
+        public const int Task30s_CYCLE = 5;
+#else
+        public const int Task30s_CYCLE = 30;
+#endif
+        private CancellationTokenSource cts30s = new CancellationTokenSource();
+        private Task task30s = null;
 
     
-        public const int Task2s_CYCLE = 2;
-        private CancellationTokenSource cts2s = new CancellationTokenSource();
-        private Task task2s = null;
+        public const int Task3s_CYCLE = 3;
+        private CancellationTokenSource cts3s = new CancellationTokenSource();
+        private Task task3s = null;
 
 
 
@@ -66,11 +70,11 @@ namespace FocusDataBridge
 
             bpsqlConnect = new BPsqlConnect(log);
 
-            task5s = new Task(Task5s, cts5s.Token, TaskCreationOptions.LongRunning);
-            task5s.Start();
+            task30s = new Task(Task30s, cts30s.Token, TaskCreationOptions.LongRunning);
+            task30s.Start();
 
-            task2s = new Task(Task2s, cts2s.Token, TaskCreationOptions.LongRunning);
-            task2s.Start();
+            task3s = new Task(Task3s, cts3s.Token, TaskCreationOptions.LongRunning);
+            task3s.Start();
 
 
         }
@@ -105,7 +109,8 @@ namespace FocusDataBridge
 
         public Relation Compare(DataRow a, DataRow b)
         {
-            if(a["USERID"].ToString().Equals("6")&& a["APPOINTMENTDATE"].ToString().Equals("2017-05-07"))
+            if(a["USERID"].ToString().Equals("6")&& a["APPOINTMENTDATE"].ToString().Equals("2017-05-09")
+                && a["APPOINTMENTTIME"].ToString().Equals("22:00:00"))
             {
                 int test = 0;
                 test++;
@@ -144,11 +149,11 @@ namespace FocusDataBridge
             }
             return null;
         }
-        private void Task5s()
+        private void Task30s()
         {
-            CancellationToken cancellation = cts5s.Token;
+            CancellationToken cancellation = cts30s.Token;
             //TimeSpan interval = TimeSpan.Zero;
-            TimeSpan interval = TimeSpan.FromSeconds(Task5s_CYCLE);
+            TimeSpan interval = TimeSpan.FromSeconds(Task30s_CYCLE);
 
             while (!cancellation.WaitHandle.WaitOne(interval))
             {
@@ -160,7 +165,7 @@ namespace FocusDataBridge
                         Console.WriteLine("logWriter is disconnected");
                         log.OpenConnection();
                     }
-                    log.Write("Task5s alive\n");
+                    log.Write("Task30s alive\n");
 
                     clinicID = GetClinicID();
                     if (clinicID == null)
@@ -266,7 +271,7 @@ namespace FocusDataBridge
                             {
                                 //update
                                 if (!bp["ACTIVE"].ToString().Equals(mysql["ACTIVE_STATUS"].ToString()))
-                                    mysqlConnect.UpdateAppointment(mysql, clinicID, CLINIC_USER_MAIL);
+                                    mysqlConnect.UpdateAppointment(mysql,bp, clinicID, CLINIC_USER_MAIL);
                                 a++;
                                 b++;
                             }
@@ -367,26 +372,26 @@ namespace FocusDataBridge
                         break;
                     }
                     //interval = WaitAfterSuccessInterval;
-                    interval = TimeSpan.FromSeconds(Task5s_CYCLE);
+                    interval = TimeSpan.FromSeconds(Task30s_CYCLE);
                 }
                 catch (Exception ex)
                 {
 
-                    log.Write("Task5s():Reconnect to DB failed\n" + ex.Message);
+                    log.Write("Task30s():Reconnect to DB failed\n" + ex.Message);
                     //Add to System Log
                     eventLog1.WriteEntry("Bridge encountered an error '" +
                     ex.Message + "'", EventLogEntryType.Error);
 
-                    interval = TimeSpan.FromSeconds(Task5s_CYCLE);
+                    interval = TimeSpan.FromSeconds(Task30s_CYCLE);
                 }
             }
         }
 
 
-        private void Task2s()//mysql->BP
+        private void Task3s()//mysql->BP
         {
-            CancellationToken cancellation = cts2s.Token;
-            TimeSpan interval = TimeSpan.FromSeconds(Task2s_CYCLE);
+            CancellationToken cancellation = cts3s.Token;
+            TimeSpan interval = TimeSpan.FromSeconds(Task3s_CYCLE);
 
             while (!cancellation.WaitHandle.WaitOne(interval))
             {
@@ -398,14 +403,34 @@ namespace FocusDataBridge
                         Console.WriteLine("logWriter is disconnected");
                         log.OpenConnection();
                     }
-                    log.Write("Task2s alive\n");
+                    log.Write("Task3s alive\n");
 
                     clinicID = GetClinicID();
                     if (clinicID == null)
                         continue;
+
+
+
                     //________________________________________________________________mysql->BP
                     try
                     {
+
+                        //cancel appointment logic
+                        DataTable dtCancel = mysqlConnect.GetCancel(clinicID);
+                       /* if (dtCancel == null)
+                            continue;
+
+                        if (dtCancel.Rows.Count == 0)
+                            continue;
+                            */
+                        foreach (DataRow row in dtCancel.Rows)
+                        {
+                            bpsqlConnect.CancelAppointment(row["BP_APPOINTMENT_ID"].ToString());
+                        }
+
+
+
+
                         DataTable dtRequests = mysqlConnect.GetAppointmentRequests(clinicID);
                         if (dtRequests == null)
                             continue;
@@ -438,14 +463,21 @@ namespace FocusDataBridge
                             else if (IsAppointmentBooked == 0)
                             {
                                 //4.[BP_AddAppointment]
-                                if (bpsqlConnect.AddAppointment(row, patientID))
+                                int appID = bpsqlConnect.AddAppointment(row, patientID);
+                                if (appID!=-1)
                                 {
                                     log.Write("Add an appointment successfully");
-                                    mysqlConnect.SetSuccessfulTo1(row["DOCTOR_APPOINTMENT_TIME_ID"].ToString(), CLINIC_USER_MAIL);
+                                    mysqlConnect.SetSuccessfulTo1(appID,row["DOCTOR_APPOINTMENT_TIME_ID"].ToString(), CLINIC_USER_MAIL);
                                 }
                             }
 
                         }
+
+
+
+                        
+
+
 
 
                     }
@@ -458,17 +490,17 @@ namespace FocusDataBridge
                     {
                         break;
                     }
-                    interval = TimeSpan.FromSeconds(Task2s_CYCLE);
+                    interval = TimeSpan.FromSeconds(Task3s_CYCLE);
                 }
                 catch (Exception ex)
                 {
 
-                    log.Write("Task2s():Sync mysql->BP failed.\n" + ex.Message);
+                    log.Write("Task3s():Sync mysql->BP failed.\n" + ex.Message);
                     //Add to System Log
                     eventLog1.WriteEntry("Bridge encountered an error '" +
                     ex.Message + "'", EventLogEntryType.Error);
 
-                    interval = TimeSpan.FromSeconds(Task2s_CYCLE);
+                    interval = TimeSpan.FromSeconds(Task3s_CYCLE);
                 }
             }
         }
@@ -476,11 +508,11 @@ namespace FocusDataBridge
 
         protected override void OnStop()
         {
-            cts2s.Cancel();
-            task2s.Wait();
+            cts3s.Cancel();
+            task3s.Wait();
 
-            cts5s.Cancel();
-            task5s.Wait();
+            cts30s.Cancel();
+            task30s.Wait();
         }
 
     }
