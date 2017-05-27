@@ -5,6 +5,10 @@ using System.Resources;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.ServiceProcess;
+
+using System.Threading.Tasks;
+using System.Threading;
+
 using System.IO;
 using System.Reflection;
 using System.ServiceModel;
@@ -19,19 +23,25 @@ namespace SystemTray
         private System.Windows.Forms.NotifyIcon WSNotifyIcon;
         private System.ComponentModel.IContainer components;
 
-
+        public ServiceHost host;
         static public LogForm logForm = new LogForm();
 
         public ConfigForm configForm = new ConfigForm();
 
         private Icon mDirIcon = new Icon("focusdata.ico");
         MenuItem[] mnuItems = new MenuItem[8];
+
+
+        public const int Task1s_CYCLE = 1;
+        private CancellationTokenSource cts1s = new CancellationTokenSource();
+        private Task task1s = null;
+
         public FocusdataSystemTray()
         {
 
             InitializeComponent();
 
-            var host = new ServiceHost(typeof(TestService),
+            host = new ServiceHost(typeof(TestService),
                        new Uri("net.pipe://localhost"));
 
             host.AddServiceEndpoint(typeof(ITestService),
@@ -43,12 +53,53 @@ namespace SystemTray
             this.Hide();
             InitializeNotifyIcon();
 
-            InitializeServiceController();
+            this.WSController = new System.ServiceProcess.ServiceController();
 
-            //Configuration config = ConfigurationManager.OpenExeConfiguration("C:\\FocusDataBridge.exe");
+            task1s = new Task(Task1s, cts1s.Token, TaskCreationOptions.LongRunning);
+            task1s.Start();
 
-            //Console.WriteLine(config.AppSettings.["FOCUSDATA_DATABASE_HOST"]);
+        }
 
+
+        private void Task1s()
+        {
+            CancellationToken cancellation = cts1s.Token;
+            TimeSpan interval = TimeSpan.FromSeconds(Task1s_CYCLE);
+
+            while (!cancellation.WaitHandle.WaitOne(interval))
+            {
+                try
+                {
+
+                    
+
+                    ServiceController[] AvailableServices = ServiceController.GetServices(".");
+
+                    foreach (ServiceController AvailableService in AvailableServices)
+                    {
+                        
+                        if (AvailableService.ServiceName == "Focusdata Service")
+                        {
+                            this.WSController.ServiceName = "Focusdata Service";
+                            SetButtonStatus();
+                            continue;
+                        }
+                    }
+
+
+
+                    if (cancellation.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    interval = TimeSpan.FromSeconds(Task1s_CYCLE);
+                }
+                catch (Exception ex)
+                {
+
+                    interval = TimeSpan.FromSeconds(Task1s_CYCLE);
+                }
+            }
         }
 
         /// <summary>
@@ -124,38 +175,15 @@ namespace SystemTray
         {
             //Hide the NotifyIcon.
             WSNotifyIcon.Visible = false;
-
+            
+            cts1s.Cancel();
+            task1s.Wait();
+            //host.Close();
             this.Close();
 
         }
 
-        private void InitializeServiceController()
-        {
-
-            this.WSController = new System.ServiceProcess.ServiceController();
-
-            ServiceController[] AvailableServices = ServiceController.GetServices(".");
-
-            foreach (ServiceController AvailableService in AvailableServices)
-            {
-                //Check the service name for Focusdata Service.
-                if (AvailableService.ServiceName == "Focusdata Service")
-                {
-                    this.WSController.ServiceName = "Focusdata Service";
-
-#if DEBUG
-#else
-                    //hold on until Focusdata Service is launched successfully
-                    WSController.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
-                    SetButtonStatus();
-#endif
-
-                    return;
-                }
-            }
-
-
-        }
+      
 
 
         private void InitializeNotifyIcon()
@@ -192,6 +220,7 @@ namespace SystemTray
 
         private void SetButtonStatus()
         {
+            WSController.Refresh();
             //get the status of the service.
             string strServerStatus = WSController.Status.ToString();
 
