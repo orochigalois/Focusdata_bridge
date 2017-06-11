@@ -29,7 +29,7 @@ namespace SystemTray
         public ConfigForm configForm = new ConfigForm();
 
         private Icon mDirIcon = new Icon("focusdata.ico");
-        MenuItem[] mnuItems = new MenuItem[8];
+        MenuItem[] mnuItems = new MenuItem[7];
 
 
         public const int Task1s_CYCLE = 1;
@@ -201,16 +201,17 @@ namespace SystemTray
             //create the menu items array
             mnuItems[0] = new MenuItem("Log...", new EventHandler(this.Log_Click));
             mnuItems[0].DefaultItem = true;
-            mnuItems[1] = new MenuItem("Config...", new EventHandler(this.Config_Click));
-            mnuItems[2] = new MenuItem("-");
-            mnuItems[3] = new MenuItem("Start service", new EventHandler(this.Start_Click));
+           
+            //mnuItems[1] = new MenuItem("Config...", new EventHandler(this.Config_Click));
+            mnuItems[1] = new MenuItem("-");
+            mnuItems[2] = new MenuItem("Start service", new EventHandler(this.Start_Click));
+            mnuItems[2].Enabled = false;
+            mnuItems[3] = new MenuItem("Stop service", new EventHandler(this.Stop_Click));
             mnuItems[3].Enabled = false;
-            mnuItems[4] = new MenuItem("Stop service", new EventHandler(this.Stop_Click));
+            mnuItems[4] = new MenuItem("Pause service", new EventHandler(this.Pause_Click));
             mnuItems[4].Enabled = false;
-            mnuItems[5] = new MenuItem("Pause service", new EventHandler(this.Pause_Click));
-            mnuItems[5].Enabled = false;
-            mnuItems[6] = new MenuItem("-");
-            mnuItems[7] = new MenuItem("Exit", new EventHandler(this.ExitControlForm));
+            mnuItems[5] = new MenuItem("-");
+            mnuItems[6] = new MenuItem("Exit", new EventHandler(this.ExitControlForm));
 
             //add the menu items to the context menu of the NotifyIcon
             ContextMenu notifyIconMenu = new ContextMenu(mnuItems);
@@ -234,29 +235,29 @@ namespace SystemTray
                 if (WSController.CanPauseAndContinue == true)
                 {
 
-                    mnuItems[5].Enabled = true;
+                    mnuItems[4].Enabled = true;
                 }
                 else
                 {
 
-                    mnuItems[5].Enabled = false;
+                    mnuItems[4].Enabled = false;
                 }
 
-                mnuItems[4].Enabled = true;
+                mnuItems[3].Enabled = true;
 
-                mnuItems[3].Enabled = false;
+                mnuItems[2].Enabled = false;
             }
             else if (strServerStatus == "Paused")
             {
+                mnuItems[2].Enabled = true;
+                mnuItems[4].Enabled = false;
                 mnuItems[3].Enabled = true;
-                mnuItems[5].Enabled = false;
-                mnuItems[4].Enabled = true;
             }
             else if (strServerStatus == "Stopped")
             {
-                mnuItems[3].Enabled = true;
-                mnuItems[5].Enabled = false;
+                mnuItems[2].Enabled = true;
                 mnuItems[4].Enabled = false;
+                mnuItems[3].Enabled = false;
             }
 
         }
