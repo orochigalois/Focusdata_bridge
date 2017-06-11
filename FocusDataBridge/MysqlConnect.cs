@@ -5,6 +5,8 @@ using System.IO;
 using MySql.Data.MySqlClient;
 using System.Configuration;
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace FocusDataBridge
 {
@@ -18,6 +20,30 @@ namespace FocusDataBridge
             this.log = log;
         }
 
+        static string encryptKey = "Alex";
+        static string Encrypt(string str)
+        {
+            DESCryptoServiceProvider descsp = new DESCryptoServiceProvider();
+            byte[] key = Encoding.Unicode.GetBytes(encryptKey);
+            byte[] data = Encoding.Unicode.GetBytes(str);
+            MemoryStream MStream = new MemoryStream();
+            CryptoStream CStream = new CryptoStream(MStream, descsp.CreateEncryptor(key, key), CryptoStreamMode.Write);
+            CStream.Write(data, 0, data.Length);
+            CStream.FlushFinalBlock();
+            return Convert.ToBase64String(MStream.ToArray());
+        }
+        static string Decrypt(string str)
+        {
+            DESCryptoServiceProvider descsp = new DESCryptoServiceProvider();
+            byte[] key = Encoding.Unicode.GetBytes(encryptKey);
+            byte[] data = Convert.FromBase64String(str);
+            MemoryStream MStream = new MemoryStream();
+            CryptoStream CStram = new CryptoStream(MStream, descsp.CreateDecryptor(key, key), CryptoStreamMode.Write);
+            CStram.Write(data, 0, data.Length);
+            CStram.FlushFinalBlock();
+            return Encoding.Unicode.GetString(MStream.ToArray());
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -29,9 +55,14 @@ namespace FocusDataBridge
             ConfigurationManager.RefreshSection("appSettings");
 
             string FOCUSDATA_DATABASE_HOST = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_HOST"];
+
+            
             string FOCUSDATA_DATABASE_NAME = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_NAME"];
+            FOCUSDATA_DATABASE_NAME = Decrypt(FOCUSDATA_DATABASE_NAME);
             string FOCUSDATA_DATABASE_USER = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_USER"];
+            FOCUSDATA_DATABASE_USER = Decrypt(FOCUSDATA_DATABASE_USER);
             string FOCUSDATA_DATABASE_PASS = ConfigurationManager.AppSettings["FOCUSDATA_DATABASE_PASS"];
+            FOCUSDATA_DATABASE_PASS = Decrypt(FOCUSDATA_DATABASE_PASS);
 
             string connectionString = "SERVER=" + FOCUSDATA_DATABASE_HOST + ";" + "DATABASE=" + FOCUSDATA_DATABASE_NAME + ";" + "UID=" + FOCUSDATA_DATABASE_USER + ";" + "PASSWORD=" + FOCUSDATA_DATABASE_PASS + ";";
             return connectionString;
