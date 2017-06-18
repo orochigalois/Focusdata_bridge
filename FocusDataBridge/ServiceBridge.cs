@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Configuration;
 
-
-
+using System.Globalization;
+using System.Collections.Generic;
 
 namespace FocusDataBridge
 {
@@ -43,9 +43,14 @@ namespace FocusDataBridge
 
 
 
+  
         /*Clinic ID*/
-        private string clinicID=null;
-        private string CLINIC_USER_MAIL = "";
+
+        private List<string> arr_clinicID = new List<string>();
+        
+
+        string[] arr_CLINIC_USER_MAIL = new string[] { };
+
 
 
         public ServiceBridge()
@@ -81,23 +86,33 @@ namespace FocusDataBridge
 
  
 
-        public string GetClinicID()
+        public List<string> GetClinicIDs()
         {
+           
+            List<string> result = new List<string>();
             try
             {
                 ConfigurationManager.RefreshSection("appSettings");
-                CLINIC_USER_MAIL = ConfigurationManager.AppSettings["CLINIC_USER_MAIL"];
-                //CHECK IF CLINIC_USER_EMAIL IS IN fd_clinic_user
-                if (mysqlConnect.CLINIC_USER_MAIL_ExistInTable(CLINIC_USER_MAIL))
+                arr_CLINIC_USER_MAIL = ConfigurationManager.AppSettings["CLINIC_USER_MAIL"].ToString().Split(',');
+
+                foreach (string CLINIC_USER_MAIL in arr_CLINIC_USER_MAIL)
                 {
-                    return mysqlConnect.GetClinicKey(CLINIC_USER_MAIL);
+                    //CHECK IF CLINIC_USER_EMAIL IS IN fd_clinic_user
+                    if (mysqlConnect.CLINIC_USER_MAIL_ExistInTable(CLINIC_USER_MAIL))
+                    {
+                        result.Add(mysqlConnect.GetClinicKey(CLINIC_USER_MAIL));
+                        
+                    }
+                    else
+                    {
+                        //error
+                        log.Write("GetClinicIDs():Clinic user " + CLINIC_USER_MAIL + " does not exist. Please register at http://www.drpages.com.au/ \n");
+                        return null;
+                    }
                 }
-                else
-                {
-                    //error
-                    log.Write("GetClinicID():Clinic user does not exist. Please register at http://www.drpages.com.au/ \n");
-                    return null;
-                }
+
+                return result;
+
             }
             catch (Exception e)
             {
@@ -151,6 +166,9 @@ namespace FocusDataBridge
         }
         private void Task30s()
         {
+
+            CultureInfo en = new CultureInfo("zh-CN");
+            Thread.CurrentThread.CurrentCulture = en;
             CancellationToken cancellation = cts30s.Token;
             //TimeSpan interval = TimeSpan.Zero;
             TimeSpan interval = TimeSpan.FromSeconds(Task30s_CYCLE);
@@ -165,10 +183,10 @@ namespace FocusDataBridge
                         Console.WriteLine("logWriter is disconnected");
                         log.OpenConnection();
                     }
-                    log.Write("Task30s alive\n");
+                    log.Write("Synchronise from clinic database\n");
 
-                    clinicID = GetClinicID();
-                    if (clinicID == null)
+                    arr_clinicID = GetClinicIDs();
+                    if (arr_clinicID == null)
                         continue;
 
 
@@ -181,7 +199,7 @@ namespace FocusDataBridge
                         if (dtDoctors_BP == null)
                             continue;
 
-                        DataTable dtDoctors_MYSQL = mysqlConnect.GetAllDoctors(clinicID);
+                        DataTable dtDoctors_MYSQL = mysqlConnect.GetAllDoctors(arr_clinicID);
 
 
 
@@ -197,6 +215,25 @@ namespace FocusDataBridge
                             string fullName = firstName + ' ' + surName;
                             string userID = rowBP["userID"].ToString();
 
+                            string address1 = "", address2 = "", postcode = "";
+
+
+                            DataTable dtLocations_BP = bpsqlConnect.BP_GetPracticeLocation(rowBP["LocationID"].ToString());
+                            if (dtLocations_BP == null)
+                                continue;
+                            foreach (DataRow rowLocation in dtLocations_BP.Rows)
+                            {
+                                address1 = rowLocation["address1"].ToString();
+                                address2 = rowLocation["address2"].ToString();
+                                postcode = rowLocation["postcode"].ToString();
+                            }
+
+                            string clinicID = mysqlConnect.Get_ClinicID_By_Location(address1, address2, postcode);
+
+
+
+
+
                             bool found = false;
                  
                             foreach (DataRow rowMYSQL in dtDoctors_MYSQL.Rows)
@@ -207,7 +244,7 @@ namespace FocusDataBridge
                                     if(!fullName.Equals(rowMYSQL["fullName"].ToString()))
                                     {
                                         //update
-                                        mysqlConnect.UpdateDoctor(fullName, userID,clinicID, CLINIC_USER_MAIL);
+                                        mysqlConnect.UpdateDoctor(fullName, userID, arr_clinicID, arr_CLINIC_USER_MAIL);
                                     }
                                 }
                             }
@@ -215,8 +252,8 @@ namespace FocusDataBridge
                             if(!found)
                             {
                                 //insert
-                                string doctorID = mysqlConnect.InsertDoctor(fullName, userID, CLINIC_USER_MAIL);
-                                mysqlConnect.Insert_fd_rel_clinic_doctor(doctorID, clinicID, CLINIC_USER_MAIL);
+                                string doctorID = mysqlConnect.InsertDoctor(fullName, userID, arr_CLINIC_USER_MAIL);
+                                mysqlConnect.Insert_fd_rel_clinic_doctor(doctorID, clinicID, arr_CLINIC_USER_MAIL);
                                 log.Write("Sync a doctor ID:" + doctorID);
                             }
 
@@ -229,6 +266,8 @@ namespace FocusDataBridge
                         }
                         //2. SQL.Sessions -> MYSQL.fd_rel_doctor_appointment_time
 
+                        string CLINIC_USER_MAIL = string.Join(",", arr_CLINIC_USER_MAIL);
+
                         DataTable dtSessions = bpsqlConnect.GetAllSessions();
                         if (dtSessions == null)
                             continue;
@@ -237,9 +276,9 @@ namespace FocusDataBridge
                         if (dtAppointments_BP == null)
                             continue;
          
-                        DataTable dtAppointments_MYSQL = mysqlConnect.GetAllAppointments(clinicID);
+                        DataTable dtAppointments_MYSQL = mysqlConnect.GetAllAppointments(arr_clinicID);
 
-                        DataTable dtDoctorDict_MYSQL = mysqlConnect.GetDoctorDict(clinicID);
+                        DataTable dtDoctorDict_MYSQL = mysqlConnect.GetDoctorDict(arr_clinicID);
                        
 
                         if (cancellation.IsCancellationRequested)
@@ -271,7 +310,7 @@ namespace FocusDataBridge
                             {
                                 //update
                                 if (!bp["ACTIVE"].ToString().Equals(mysql["ACTIVE_STATUS"].ToString()))
-                                    mysqlConnect.UpdateAppointment(mysql,bp, clinicID, CLINIC_USER_MAIL);
+                                    mysqlConnect.UpdateAppointment(mysql,bp, arr_CLINIC_USER_MAIL);
                                 a++;
                                 b++;
                             }
@@ -280,6 +319,8 @@ namespace FocusDataBridge
                                 string DOCTOR_ID = GetDoctorID(bp["USERID"].ToString(), dtDoctorDict_MYSQL);
                                 if (DOCTOR_ID == null)
                                     continue;
+
+                                
                                 insertAppQuery += "(" + DOCTOR_ID +
                                     ",'" + bp["APPOINTMENTDATE"].ToString() + "', '"
                                     + bp["APPOINTMENTTIME"].ToString() + "', '" + bp["ACTIVE"].ToString()
@@ -390,6 +431,10 @@ namespace FocusDataBridge
 
         private void Task3s()//mysql->BP
         {
+
+
+            CultureInfo en = new CultureInfo("zh-CN");
+            Thread.CurrentThread.CurrentCulture = en;
             CancellationToken cancellation = cts3s.Token;
             TimeSpan interval = TimeSpan.FromSeconds(Task3s_CYCLE);
 
@@ -403,10 +448,10 @@ namespace FocusDataBridge
                         Console.WriteLine("logWriter is disconnected");
                         log.OpenConnection();
                     }
-                    log.Write("Task3s alive\n");
+                    log.Write("Synchronise from DrPages\n");
 
-                    clinicID = GetClinicID();
-                    if (clinicID == null)
+                    arr_clinicID = GetClinicIDs();
+                    if (arr_clinicID == null)
                         continue;
 
 
@@ -416,7 +461,7 @@ namespace FocusDataBridge
                     {
 
                         //cancel appointment logic
-                        DataTable dtCancel = mysqlConnect.GetCancel(clinicID);
+                        DataTable dtCancel = mysqlConnect.GetCancel(arr_clinicID);
                        /* if (dtCancel == null)
                             continue;
 
@@ -431,7 +476,7 @@ namespace FocusDataBridge
 
 
 
-                        DataTable dtRequests = mysqlConnect.GetAppointmentRequests(clinicID);
+                        DataTable dtRequests = mysqlConnect.GetAppointmentRequests(arr_clinicID);
                         if (dtRequests == null)
                             continue;
 
@@ -439,7 +484,7 @@ namespace FocusDataBridge
                             continue;
 
                         //1.reset trigger
-                        mysqlConnect.ResetAllRequestFlag(clinicID, CLINIC_USER_MAIL);
+                        mysqlConnect.ResetAllRequestFlag(arr_clinicID, arr_CLINIC_USER_MAIL);
 
                         foreach (DataRow row in dtRequests.Rows)
                         {
@@ -458,7 +503,7 @@ namespace FocusDataBridge
 
                             if (IsAppointmentBooked == 1)
                             {
-                                mysqlConnect.SetSuccessfulTo2(row["DOCTOR_APPOINTMENT_TIME_ID"].ToString(), CLINIC_USER_MAIL);
+                                mysqlConnect.SetSuccessfulTo2(row["DOCTOR_APPOINTMENT_TIME_ID"].ToString(), arr_CLINIC_USER_MAIL);
                             }
                             else if (IsAppointmentBooked == 0)
                             {
@@ -467,7 +512,7 @@ namespace FocusDataBridge
                                 if (appID!=-1)
                                 {
                                     log.Write("Add an appointment successfully");
-                                    mysqlConnect.SetSuccessfulTo1(appID,row["DOCTOR_APPOINTMENT_TIME_ID"].ToString(), CLINIC_USER_MAIL);
+                                    mysqlConnect.SetSuccessfulTo1(appID,row["DOCTOR_APPOINTMENT_TIME_ID"].ToString(), arr_CLINIC_USER_MAIL);
                                 }
                             }
 

@@ -35,6 +35,81 @@ namespace FocusDataBridge
             string connectionString = "Data Source=DBServer;Password=" + DATABASE_PASS + ";Persist Security Info=True;User ID=" + DATABASE_USER + ";Initial Catalog=" + DATABASE_NAME + ";Data Source=" + DATABASE_HOST;
             return connectionString;
         }
+
+
+
+        public DataTable BP_GetPracticeLocation(string id)
+        {
+            try
+            {
+                DataTable dtLocations = new DataTable();
+                dtLocations.Clear();
+                dtLocations.Columns.Add("address1");
+                dtLocations.Columns.Add("address2");
+                dtLocations.Columns.Add("postcode");
+
+                using (SqlConnection connection = new SqlConnection(PrepareConnectionString()))
+                {
+                    connection.Open();
+                    using (SqlCommand cmd = new SqlCommand("BP_GetPracticeLocation", connection))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        SqlParameter p1 = new SqlParameter("@locationid", Int32.Parse(id));
+                        p1.Direction = ParameterDirection.Input;
+                        p1.DbType = DbType.Int32;
+                        cmd.Parameters.Add(p1);
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            string address1 = "", address2 = "", postcode="";
+                           
+                            if (reader != null)
+                            {
+                                while (reader.Read())
+                                {
+
+                                    if (!reader.IsDBNull(reader.GetOrdinal("ADDRESS1")))
+                                    {
+                                        address1 = (string)reader["ADDRESS1"];
+                                        address1 = address1.Trim();
+                                    }
+                                    if (!reader.IsDBNull(reader.GetOrdinal("ADDRESS2")))
+                                    {
+                                        address2 = (string)reader["ADDRESS2"];
+                                        address2 = address2.Trim();
+                                    }
+                                    if (!reader.IsDBNull(reader.GetOrdinal("POSTCODE")))
+                                    {
+                                        postcode = (string)reader["POSTCODE"];
+                                        postcode = postcode.Trim();
+                                    }
+
+
+                                    DataRow _r = dtLocations.NewRow();
+                                    _r["address1"] = address1;
+                                    _r["address2"] = address2;
+                                    _r["postcode"] = postcode;
+                                    dtLocations.Rows.Add(_r);
+                                }
+                            }
+                        }
+
+
+                    }
+                }
+                return dtLocations;
+
+
+            }
+            catch (Exception e)
+            {
+                log.Write("BPSQL:BP_GetPracticeLocation(): failed\n" + e.Message);
+                return null;
+            }
+
+        }
+
+
+
         /// <summary>
         /// BP_GetAllUsers
         /// </summary>
@@ -49,6 +124,8 @@ namespace FocusDataBridge
                 dtDoctors.Columns.Add("firstName");
                 dtDoctors.Columns.Add("userID");
 
+                dtDoctors.Columns.Add("LocationID");
+
                 using (SqlConnection connection = new SqlConnection(PrepareConnectionString()))
                 {
                     connection.Open();
@@ -59,7 +136,7 @@ namespace FocusDataBridge
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             string surName = "", firstName = "";
-                            int userID = 0;
+                            int userID = 0, LocationID=0;
                             if (reader != null)
                             {
                                 while (reader.Read())
@@ -69,11 +146,13 @@ namespace FocusDataBridge
                                     firstName = (string)reader["FIRSTNAME"];
                                     firstName = firstName.Trim();
                                     userID = (int)reader["UserID"];
+                                    LocationID= (int)reader["LocationID"];
 
                                     DataRow _r = dtDoctors.NewRow();
                                     _r["surName"] = surName;
                                     _r["firstName"] = firstName;
                                     _r["userID"] = userID;
+                                    _r["LocationID"] = LocationID;
                                     dtDoctors.Rows.Add(_r);
                                 }
                             }

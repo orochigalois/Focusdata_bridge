@@ -7,6 +7,7 @@ using System.Configuration;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
+using System.Globalization;
 
 namespace FocusDataBridge
 {
@@ -20,7 +21,7 @@ namespace FocusDataBridge
             this.log = log;
         }
 
-        static string encryptKey = "Alex";
+        static string encryptKey = "FD!7";
         static string Encrypt(string str)
         {
             DESCryptoServiceProvider descsp = new DESCryptoServiceProvider();
@@ -74,7 +75,7 @@ namespace FocusDataBridge
         /// </summary>
         /// <param name="clinicID"></param>
         /// <returns></returns>
-        public DataTable GetAllDoctors(string clinicID)
+        public DataTable GetAllDoctors(List<string> arr_clinicID)
         {
             try
             {
@@ -83,7 +84,16 @@ namespace FocusDataBridge
                 dtDoctors.Columns.Add("fullName");
                 dtDoctors.Columns.Add("userID");
 
-                string query = "SELECT a.DOCTOR_NAME,a.DOCTOR_ID_IMPORT FROM fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID where b.CLINIC_USER_ID=" + clinicID;
+
+                
+
+                string query = "SELECT a.DOCTOR_NAME,a.DOCTOR_ID_IMPORT FROM fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID where";
+
+                foreach (string clinicID in arr_clinicID)
+                {
+                    query += " b.CLINIC_USER_ID = " + clinicID + " or ";
+                }
+                query += "false";
 
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
@@ -122,7 +132,7 @@ namespace FocusDataBridge
 
         }
 
-        public DataTable GetAllAppointments(string clinicID)
+        public DataTable GetAllAppointments(List<string> arr_clinicID)
         {
             try
             {
@@ -135,8 +145,15 @@ namespace FocusDataBridge
                 dtAppointments.Columns.Add("ACTIVE_STATUS");
 
 
-                string query = "SELECT a.DOCTOR_ID,b.DOCTOR_ID_IMPORT,a.APPOINTMENT_DATE,a.APPOINTMENT_TIME,a.ACTIVE_STATUS FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join `fd_rel_clinic_doctor` c on a.DOCTOR_ID=c.DOCTOR_ID where c.CLINIC_USER_ID="
-                    + clinicID+ " order by CAST(b.DOCTOR_ID_IMPORT AS CHAR(50)),a.APPOINTMENT_DATE,a.APPOINTMENT_TIME";
+            
+
+                string query = "SELECT a.DOCTOR_ID,b.DOCTOR_ID_IMPORT,a.APPOINTMENT_DATE,a.APPOINTMENT_TIME,a.ACTIVE_STATUS FROM fd_rel_doctor_appointment_time a left join fd_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join `fd_rel_clinic_doctor` c on a.DOCTOR_ID=c.DOCTOR_ID where ";
+
+                foreach (string clinicID in arr_clinicID)
+                {
+                    query += " c.CLINIC_USER_ID= " + clinicID + " or ";
+                }
+                query += "false" + " order by CAST(b.DOCTOR_ID_IMPORT AS CHAR(50)),a.APPOINTMENT_DATE,a.APPOINTMENT_TIME";
 
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
@@ -154,6 +171,8 @@ namespace FocusDataBridge
                                     _r["DOCTOR_ID"] = reader["DOCTOR_ID"].ToString();
                                     _r["USER_ID"] = reader["DOCTOR_ID_IMPORT"].ToString();
                                     var dateTime = DateTime.Parse(reader["APPOINTMENT_DATE"].ToString());
+
+                                   
                                     _r["APPOINTMENT_DATE"] = dateTime.ToString("yyyy-MM-dd");
                                     _r["APPOINTMENT_TIME"] = reader["APPOINTMENT_TIME"].ToString();
                                     _r["ACTIVE_STATUS"] = reader["ACTIVE_STATUS"].ToString();
@@ -277,6 +296,39 @@ namespace FocusDataBridge
 
         }
 
+
+        public string Get_ClinicID_By_Location(string address1, string address2, string postcode)
+        {
+            string result = "";
+            string query = "SELECT CLINIC_USER_ID FROM fd_clinic_user where CLINIC_ADDR='" + address1+ address2 + "' and CLINIC_POSTCODE='" + postcode+"'";
+            try
+            {
+                using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
+                {
+                    connection.Open();
+                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
+                    {
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader != null)
+                            {
+                                while (reader.Read())
+                                {
+                                    result = reader["CLINIC_USER_ID"].ToString();
+                                }
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+            catch (Exception e)
+            {
+                log.Write("MYSQL:Get_ClinicID_By_Location(): failed\n" + e.Message);
+                return result;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -316,18 +368,28 @@ namespace FocusDataBridge
         }
 
         /// <summary>
-        /// 
+        /// Query SQL should be constricted by clinicID, because several BP doctor tables will come into single "fd_doctor".Otherwise, 2 doctors may have the same DOCTOR_ID_IMPORT which is obviously wrong.
         /// </summary>
         /// <param name="surName"></param>
         /// <param name="firstName"></param>
         /// <param name="userID"></param>
         /// <param name="clinicID"></param>
-        public void UpdateDoctor(string fullName, string userID, string clinicID, string update_user)
+        public void UpdateDoctor(string fullName, string userID, List<string> arr_clinicID, string [] arr_update_user)
         {
-
+            string update_user = string.Join(",", arr_update_user);
             try
             {
-                string query = "UPDATE fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID SET a.ACTIVE_STATUS='0', a.DOCTOR_NAME='" + fullName + "',a.UPDATE_USER='"+ update_user + "',a.UPDATE_DATE='"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "' WHERE b.CLINIC_USER_ID=" + clinicID + " and a.DOCTOR_ID_IMPORT=" + userID;
+
+                string query_where="(";
+
+                foreach (string clinicID in arr_clinicID)
+                {
+                    query_where += " b.CLINIC_USER_ID= " + clinicID + " or ";
+                }
+                query_where += "false)";
+
+
+                string query = "UPDATE fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID SET a.ACTIVE_STATUS='0', a.DOCTOR_NAME='" + fullName + "',a.UPDATE_USER='"+ update_user + "',a.UPDATE_DATE='"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "' WHERE " + query_where + " and a.DOCTOR_ID_IMPORT=" + userID;
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
@@ -352,9 +414,10 @@ namespace FocusDataBridge
         /// <param name="firstName"></param>
         /// <param name="userID"></param>
         /// <returns></returns>
-        public string InsertDoctor(string fullName, string userID, string create_user)
+        public string InsertDoctor(string fullName, string userID, string[] arr_create_user)
         {
             string result = "";
+            string create_user = string.Join(",", arr_create_user);
             try
             {
                 string query = "INSERT INTO fd_doctor (DOCTOR_NAME, ACTIVE_STATUS,DOCTOR_ID_IMPORT,CREATE_USER,CREATE_DATE) VALUES('" + fullName + "', '0','" + userID + "','"+ create_user + "','"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
@@ -396,8 +459,9 @@ namespace FocusDataBridge
         /// <param name="doctorKey"></param>
         /// <param name="clinicKey"></param>
         /// <param name="create_user"></param>
-        public void Insert_fd_rel_clinic_doctor(string doctorKey, string clinicKey, string create_user)
+        public void Insert_fd_rel_clinic_doctor(string doctorKey, string clinicKey, string[] arr_create_user)
         {
+            string create_user = string.Join(",", arr_create_user);
             try
             {
                 string query = "INSERT INTO fd_rel_clinic_doctor (CLINIC_USER_ID, DOCTOR_ID, CREATE_USER, CREATE_DATE) VALUES('" + clinicKey + "','" + doctorKey + "','" + create_user + "','" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
@@ -458,13 +522,26 @@ namespace FocusDataBridge
         }
 
 
-        public DataTable GetDoctorDict(string clinicID)
+        public DataTable GetDoctorDict(List<string> arr_clinicID)
         {
             DataTable dtDoctorDict = new DataTable();
             dtDoctorDict.Clear();
             dtDoctorDict.Columns.Add("DOCTOR_ID");
             dtDoctorDict.Columns.Add("DOCTOR_ID_IMPORT");
-            string query = "SELECT a.DOCTOR_ID,a.DOCTOR_ID_IMPORT FROM fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID where b.CLINIC_USER_ID=" + clinicID;
+     
+
+
+            string query = "SELECT a.DOCTOR_ID,a.DOCTOR_ID_IMPORT FROM fd_doctor a left join fd_rel_clinic_doctor b on a.DOCTOR_ID = b.DOCTOR_ID where ";
+
+            foreach (string clinicID in arr_clinicID)
+            {
+                query += " b.CLINIC_USER_ID= " + clinicID + " or ";
+            }
+            query += "false";
+
+
+
+
             try
             {
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
@@ -592,8 +669,9 @@ namespace FocusDataBridge
         /// <param name="dr_bp"></param>
         /// <param name="clinicID"></param>
         /// <param name="update_user"></param>
-        public void UpdateAppointment(DataRow dr_mysql,DataRow dr_bp,string clinicID,string update_user)
+        public void UpdateAppointment(DataRow dr_mysql,DataRow dr_bp,string[] arr_update_user)
         {
+            string update_user = string.Join(",", arr_update_user);
             try
             {
                
@@ -656,12 +734,18 @@ namespace FocusDataBridge
         /// </summary>
         /// <param name="clinicID"></param>
         /// <returns></returns>
-        public DataTable GetAppointmentRequests(string clinicID)
+        public DataTable GetAppointmentRequests(List<string> arr_clinicID)
         {
             try
             {
-                string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_FIRSTNAME,CUSTOMER_LASTNAME,TITLE_ID,GENDER_ID,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a LEFT JOIN fd_doctor b ON a.DOCTOR_ID = b.DOCTOR_ID left join fd_rel_clinic_doctor c on a.DOCTOR_ID = c.DOCTOR_ID LEFT JOIN fd_customer_user d ON a.REQUESTING_USER_ID = d.CUSTOMER_USER_ID  WHERE REQUESTING_FLAG=1 and c.CLINIC_USER_ID="
-                    + clinicID;
+                string query = "SELECT DOCTOR_APPOINTMENT_TIME_ID,DOCTOR_ID_IMPORT,APPOINTMENT_DATE,APPOINTMENT_TIME,CUSTOMER_USER_MAIL,CUSTOMER_FIRSTNAME,CUSTOMER_LASTNAME,TITLE_ID,GENDER_ID,CUSTOMER_BIRTHDAY,CUSTOMER_ADDR,CUSTOMER_POSTCODE,CUSTOMER_SUBURB,STATE_ID,CUSTOMER_PHONE_NO,MEDICAL_CARD_NO FROM fd_rel_doctor_appointment_time a LEFT JOIN fd_doctor b ON a.DOCTOR_ID = b.DOCTOR_ID left join fd_rel_clinic_doctor c on a.DOCTOR_ID = c.DOCTOR_ID LEFT JOIN fd_customer_user d ON a.REQUESTING_USER_ID = d.CUSTOMER_USER_ID  WHERE REQUESTING_FLAG=1 and (";
+
+
+                foreach (string clinicID in arr_clinicID)
+                {
+                    query += " c.CLINIC_USER_ID= " + clinicID + " or ";
+                }
+                query += "false)";
 
                 DataTable re = new DataTable();
                 re.Clear();
@@ -696,7 +780,12 @@ namespace FocusDataBridge
                                     DataRow _r = re.NewRow();
                                     _r["DOCTOR_APPOINTMENT_TIME_ID"] = reader["DOCTOR_APPOINTMENT_TIME_ID"].ToString();
                                     _r["DOCTOR_ID_IMPORT"] = reader["DOCTOR_ID_IMPORT"].ToString();
-                                    _r["APPOINTMENT_DATE"] = reader["APPOINTMENT_DATE"].ToString();
+                                    
+
+                                    var dateTime = DateTime.Parse(reader["APPOINTMENT_DATE"].ToString());
+                                    _r["APPOINTMENT_DATE"] = dateTime.ToString("yyyy-MM-dd");
+
+                                
                                     _r["APPOINTMENT_TIME"] = reader["APPOINTMENT_TIME"].ToString();
                                     _r["CUSTOMER_USER_MAIL"] = reader["CUSTOMER_USER_MAIL"].ToString();
                                     _r["CUSTOMER_FIRSTNAME"] = reader["CUSTOMER_FIRSTNAME"].ToString();
@@ -730,12 +819,20 @@ namespace FocusDataBridge
 
 
 
-        public DataTable GetCancel(string clinicID)
+        public DataTable GetCancel(List<string> arr_clinicID)
         {
             try
             {
-                string query = "SELECT BP_APPOINTMENT_ID FROM fd_rel_customer_appointment a left join fd_rel_clinic_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_rel_doctor_appointment_time c on a.DOCTOR_APPOINTMENT_TIME_ID=c.DOCTOR_APPOINTMENT_TIME_ID where a.APPOINTMENT_STATUS_ID=2 and b.CLINIC_USER_ID="
-                    + clinicID;
+              
+                string query = "SELECT BP_APPOINTMENT_ID FROM fd_rel_customer_appointment a left join fd_rel_clinic_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_rel_doctor_appointment_time c on a.DOCTOR_APPOINTMENT_TIME_ID=c.DOCTOR_APPOINTMENT_TIME_ID where a.APPOINTMENT_STATUS_ID=2 and (";
+
+                foreach (string clinicID in arr_clinicID)
+                {
+                    query += " b.CLINIC_USER_ID= " + clinicID + " or ";
+                }
+                query += "false)";
+
+
 
                 DataTable re = new DataTable();
                 re.Clear();
@@ -779,16 +876,24 @@ namespace FocusDataBridge
         /// </summary>
         /// <param name="clinicID"></param>
         /// <param name="update_user"></param>
-        public void ResetAllRequestFlag(string clinicID,string update_user)
+        public void ResetAllRequestFlag(List<string> arr_clinicID,string[] arr_update_user)
         {
+            string update_user = string.Join(",", arr_update_user);
             try
             {
                 string query = "SET SQL_SAFE_UPDATES = 0; UPDATE fd_rel_doctor_appointment_time a left JOIN `fd_rel_clinic_doctor` b ON a.`DOCTOR_ID` = b.`DOCTOR_ID` SET a.REQUESTING_FLAG = 0,a.REQUESTING_USER_ID = 0,a.UPDATE_USER='"
                     + update_user
                     + "',a.UPDATE_DATE='"
-                    + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") 
-                    + "' WHERE b.`CLINIC_USER_ID` = " 
-                    + clinicID;
+                    + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                    + "' WHERE ";
+                   
+
+
+                foreach (string clinicID in arr_clinicID)
+                {
+                    query += " b.CLINIC_USER_ID= " + clinicID + " or ";
+                }
+                query += "false";
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
                 {
@@ -811,8 +916,9 @@ namespace FocusDataBridge
         /// </summary>
         /// <param name="id"></param>
         /// <param name="update_user"></param>
-        public void SetSuccessfulTo2(string id,string update_user)//2 means ocupied, failed
+        public void SetSuccessfulTo2(string id,string[] arr_update_user)//2 means ocupied, failed
         {
+            string update_user = string.Join(",", arr_update_user);
             try
             {
                 string query = "UPDATE fd_rel_doctor_appointment_time SET SUCCESSFUL_FLAG=2,UPDATE_USER='"
@@ -842,8 +948,9 @@ namespace FocusDataBridge
         /// </summary>
         /// <param name="id"></param>
         /// <param name="update_user"></param>
-        public void SetSuccessfulTo1(int appID, string id, string update_user)//1 means successful
+        public void SetSuccessfulTo1(int appID, string id, string[] arr_update_user)//1 means successful
         {
+            string update_user = string.Join(",", arr_update_user);
             try
             {
                 string query = "UPDATE fd_rel_doctor_appointment_time SET BP_APPOINTMENT_ID="+appID.ToString()+" ,SUCCESSFUL_FLAG=1,UPDATE_USER='"

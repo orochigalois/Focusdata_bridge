@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using System.ServiceModel;
 using LogInterfaces;
+using System.Globalization;
 
 namespace FocusDataBridge
 {
@@ -74,11 +75,15 @@ namespace FocusDataBridge
                     try
                     {
                         StringBuilder builder = new StringBuilder();
-                        builder.Append("\r\nLog Entry : ");
-                        builder.Append(DateTime.Now.ToLongTimeString());
+                        builder.Append("\r\nLog Entry ");
+                        CultureInfo enAU = new CultureInfo("en-AU");
+
+
+                        builder.Append(DateTime.Now.ToString("d", enAU));
                         builder.Append(" ");
-                        builder.Append(DateTime.Now.ToLongDateString());
-                        builder.AppendLine("  :");
+                        
+                        builder.Append(DateTime.Now.ToLongTimeString());
+                        builder.Append("\n");
                         builder.AppendLine(message);
                         builder.AppendLine("-------------------------------");
 
