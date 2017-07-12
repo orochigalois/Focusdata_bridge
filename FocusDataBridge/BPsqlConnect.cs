@@ -141,7 +141,10 @@ namespace FocusDataBridge
                             {
                                 while (reader.Read())
                                 {
-                                    surName = (string)reader["SURNAME"];
+                                    if (!reader.IsDBNull(reader.GetOrdinal("SURNAME")))
+                                        surName = (string)reader["SURNAME"];
+                                    else
+                                        surName = "";
                                     surName = surName.Trim();
                                     firstName = (string)reader["FIRSTNAME"];
                                     firstName = firstName.Trim();
@@ -226,14 +229,22 @@ namespace FocusDataBridge
                                     clinic1_sessions_StartTime = (int)reader["StartTime"];
                                     clinic1_sessions_EndTime = (int)reader["EndTime"];
                                     clinic1_sessions_Length = (int)reader["Length"];
-
-                                    clinic1_sessions_StartDate = (System.DateTime)reader["StartDate"];
-                                    clinic1_sessions_EndDate = (System.DateTime)reader["EndDate"];
+                                    if (!reader.IsDBNull(reader.GetOrdinal("StartDate")))
+                                        clinic1_sessions_StartDate = (System.DateTime)reader["StartDate"];
+                                    else
+                                        clinic1_sessions_StartDate = new DateTime(2001, 1, 1);
+                                    if (!reader.IsDBNull(reader.GetOrdinal("EndDate")))
+                                        clinic1_sessions_EndDate = (System.DateTime)reader["EndDate"];
+                                    else
+                                        clinic1_sessions_EndDate = new DateTime(2030, 1, 1);
                                     clinic1_sessions_Weeks = (int)reader["Weeks"];
                                     clinic1_sessions_CycleWeek = (int)reader["CycleWeek"];
-                                    clinic1_sessions_CycleDate = (System.DateTime)reader["CycleDate"];
+                                    if (!reader.IsDBNull(reader.GetOrdinal("CycleDate")))
+                                        clinic1_sessions_CycleDate = (System.DateTime)reader["CycleDate"];
+                                    else
+                                        clinic1_sessions_CycleDate = new DateTime(2001, 1, 1);
 
-                                    
+
                                     DataRow _r = dtSessions.NewRow();
                                     _r["UserID"] = clinic1_sessions_UserID.ToString();
                                     _r["LocationID"] = clinic1_sessions_LocationID.ToString();

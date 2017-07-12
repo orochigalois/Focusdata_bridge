@@ -85,7 +85,7 @@ namespace FocusDataBridge
         }
 
  
-
+        //_____001
         public List<string> GetClinicIDs()
         {
            
@@ -120,6 +120,18 @@ namespace FocusDataBridge
                 return null;
             }
         }
+        //_____002
+        private string GetDoctorID(string user_id, DataTable dict)
+        {
+            foreach (DataRow row in dict.Rows)
+            {
+                if (row["DOCTOR_ID_IMPORT"].ToString().Equals(user_id))
+                {
+                    return row["DOCTOR_ID"].ToString();
+                }
+            }
+            return null;
+        }
 
 
         public Relation Compare(DataRow a, DataRow b)
@@ -153,17 +165,7 @@ namespace FocusDataBridge
         }
 
 
-        private string GetDoctorID(string user_id, DataTable dict)
-        {
-            foreach (DataRow row in dict.Rows)
-            {
-                if(row["DOCTOR_ID_IMPORT"].ToString().Equals(user_id))
-                {
-                    return row["DOCTOR_ID"].ToString();
-                }
-            }
-            return null;
-        }
+        
         private void Task30s()
         {
 
