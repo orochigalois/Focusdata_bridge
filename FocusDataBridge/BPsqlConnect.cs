@@ -652,10 +652,10 @@ namespace FocusDataBridge
                         p32.DbType = DbType.Int32;
                         cmd.Parameters.Add(p32);
 
-                        SqlParameter p33 = new SqlParameter("@EMERGENCYCONTACT", 0);
-                        p33.Direction = ParameterDirection.Input;
-                        p33.DbType = DbType.Int32;
-                        cmd.Parameters.Add(p33);
+                        //SqlParameter p33 = new SqlParameter("@EMERGENCYCONTACT", 0);
+                        //p33.Direction = ParameterDirection.Input;
+                        //p33.DbType = DbType.Int32;
+                        //cmd.Parameters.Add(p33);
 
 
                         var returnParameter = cmd.Parameters.Add("@PATIENTID", SqlDbType.Int);

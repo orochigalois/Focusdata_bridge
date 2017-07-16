@@ -232,7 +232,9 @@ namespace FocusDataBridge
 
                             string clinicID = mysqlConnect.Get_ClinicID_By_Location(address1, address2, postcode);
 
-
+                            if (clinicID == "")
+                                continue;
+                                
 
 
 
@@ -248,6 +250,7 @@ namespace FocusDataBridge
                                         //update
                                         mysqlConnect.UpdateDoctor(fullName, userID, arr_clinicID, arr_CLINIC_USER_MAIL);
                                     }
+                                    continue;
                                 }
                             }
 
@@ -320,7 +323,10 @@ namespace FocusDataBridge
                             {
                                 string DOCTOR_ID = GetDoctorID(bp["USERID"].ToString(), dtDoctorDict_MYSQL);
                                 if (DOCTOR_ID == null)
+                                {
+                                    a++;
                                     continue;
+                                }
 
                                 
                                 insertAppQuery += "(" + DOCTOR_ID +
@@ -362,7 +368,10 @@ namespace FocusDataBridge
                             DataRow bp = dtAppointments_BP.Rows[a];
                             string DOCTOR_ID = GetDoctorID(bp["USERID"].ToString(), dtDoctorDict_MYSQL);
                             if (DOCTOR_ID == null)
+                            {
+                                a++;
                                 continue;
+                            }
                             insertAppQuery += "(" + DOCTOR_ID +
                                 ",'" + bp["APPOINTMENTDATE"].ToString() + "', '"
                                 + bp["APPOINTMENTTIME"].ToString() + "', '" + bp["ACTIVE"].ToString()
