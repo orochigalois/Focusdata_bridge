@@ -674,16 +674,34 @@ namespace FocusDataBridge
             string update_user = string.Join(",", arr_update_user);
             try
             {
-               
-                string query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS="
-                    + dr_bp["ACTIVE"]
-                    + ",UPDATE_USER='"+ update_user + "',UPDATE_DATE='"+ DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+ "' WHERE DOCTOR_ID="
+                string query = "";
+                if (dr_bp["ACTIVE"].Equals("1"))
+                {
+                    query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS=1,REQUESTING_FLAG=0,REQUESTING_USER_ID=0,SUCCESSFUL_FLAG=0,BP_APPOINTMENT_ID=0,UPDATE_USER='" + update_user + "',UPDATE_DATE='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' WHERE DOCTOR_ID="
                     + dr_mysql["DOCTOR_ID"]
                     + " AND APPOINTMENT_DATE= '"
                         + dr_bp["APPOINTMENTDATE"]
                         + "' AND APPOINTMENT_TIME= '"
                         + dr_bp["APPOINTMENTTIME"]
                         + "'";
+                }
+                else if (dr_bp["ACTIVE"].Equals("0"))
+                {
+                    query = "UPDATE fd_rel_doctor_appointment_time SET ACTIVE_STATUS="
+                    + dr_bp["ACTIVE"]
+                    + ",UPDATE_USER='" + update_user + "',UPDATE_DATE='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' WHERE DOCTOR_ID="
+                    + dr_mysql["DOCTOR_ID"]
+                    + " AND APPOINTMENT_DATE= '"
+                        + dr_bp["APPOINTMENTDATE"]
+                        + "' AND APPOINTMENT_TIME= '"
+                        + dr_bp["APPOINTMENTTIME"]
+                        + "'";
+                }
+                else
+                {
+                    //do nothing
+                }
+                
 
 
                 using (MySqlConnection connection = new MySqlConnection(PrepareConnectionString()))
@@ -823,8 +841,8 @@ namespace FocusDataBridge
         {
             try
             {
-              
-                string query = "SELECT BP_APPOINTMENT_ID FROM fd_rel_customer_appointment a left join fd_rel_clinic_doctor b on a.DOCTOR_ID=b.DOCTOR_ID left join fd_rel_doctor_appointment_time c on a.DOCTOR_APPOINTMENT_TIME_ID=c.DOCTOR_APPOINTMENT_TIME_ID where a.APPOINTMENT_STATUS_ID=2 and (";
+
+                string query = "SELECT a.BP_APPOINTMENT_ID FROM fd_rel_doctor_appointment_time a left join fd_rel_clinic_doctor b on a.DOCTOR_ID=b.DOCTOR_ID where a.CANCEL_TRIGGER_FLAG=1 and (";
 
                 foreach (string clinicID in arr_clinicID)
                 {
@@ -851,8 +869,10 @@ namespace FocusDataBridge
                                 while (reader.Read())
                                 {
                                     DataRow _r = re.NewRow();
+                                    
                                     _r["BP_APPOINTMENT_ID"] = reader["BP_APPOINTMENT_ID"].ToString();
-                                    re.Rows.Add(_r);
+                                    if (!_r["BP_APPOINTMENT_ID"].Equals("0"))
+                                        re.Rows.Add(_r);
                                 }
                             }
                         }
@@ -881,7 +901,7 @@ namespace FocusDataBridge
             string update_user = string.Join(",", arr_update_user);
             try
             {
-                string query = "SET SQL_SAFE_UPDATES = 0; UPDATE fd_rel_doctor_appointment_time a left JOIN `fd_rel_clinic_doctor` b ON a.`DOCTOR_ID` = b.`DOCTOR_ID` SET a.REQUESTING_FLAG = 0,a.REQUESTING_USER_ID = 0,a.UPDATE_USER='"
+                string query = "SET SQL_SAFE_UPDATES = 0; UPDATE fd_rel_doctor_appointment_time a left JOIN `fd_rel_clinic_doctor` b ON a.`DOCTOR_ID` = b.`DOCTOR_ID` SET a.REQUESTING_FLAG = 0,a.CANCEL_TRIGGER_FLAG = 0,a.UPDATE_USER='"
                     + update_user
                     + "',a.UPDATE_DATE='"
                     + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")

@@ -836,7 +836,7 @@ namespace FocusDataBridge
             }
             catch (Exception e)
             {
-                log.Write("BPSQL:AddAppointment(): failed\n" + e.Message);
+                log.Write("BPSQL:CancelAppointment(): failed\n" + e.Message);
             }
 
         }

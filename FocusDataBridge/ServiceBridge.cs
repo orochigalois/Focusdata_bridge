@@ -85,7 +85,7 @@ namespace FocusDataBridge
         }
 
  
-        //_____001
+   
         public List<string> GetClinicIDs()
         {
            
@@ -120,7 +120,7 @@ namespace FocusDataBridge
                 return null;
             }
         }
-        //_____002
+   
         private string GetDoctorID(string user_id, DataTable dict)
         {
             foreach (DataRow row in dict.Rows)
@@ -473,12 +473,7 @@ namespace FocusDataBridge
 
                         //cancel appointment logic
                         DataTable dtCancel = mysqlConnect.GetCancel(arr_clinicID);
-                       /* if (dtCancel == null)
-                            continue;
-
-                        if (dtCancel.Rows.Count == 0)
-                            continue;
-                            */
+                       
                         foreach (DataRow row in dtCancel.Rows)
                         {
                             bpsqlConnect.CancelAppointment(row["BP_APPOINTMENT_ID"].ToString());
@@ -488,11 +483,7 @@ namespace FocusDataBridge
 
 
                         DataTable dtRequests = mysqlConnect.GetAppointmentRequests(arr_clinicID);
-                        if (dtRequests == null)
-                            continue;
-
-                        if (dtRequests.Rows.Count == 0)
-                            continue;
+                        
 
                         //1.reset trigger
                         mysqlConnect.ResetAllRequestFlag(arr_clinicID, arr_CLINIC_USER_MAIL);
